@@ -51,7 +51,8 @@ contents as its value. Replace the clipboard afterwards with `Set-Clipboard
 -Value " "` (a single space). Never commit the keystore/base64 or paste it into
 issues or chat.
 
-CI restores this key before Gradle runs, validates private-key access, and
+CI explicitly sets `ANDROID_USER_HOME` and restores its `debug.keystore`
+before Gradle runs, validates private-key access, and
 verifies both APKs against its certificate before publishing. If the secret
 is missing, tests still run but APK build/upload are skipped with a notice.
 An invalid secret fails the job. Existing `LOCALE_PLUGIN_MAVEN_USER` and

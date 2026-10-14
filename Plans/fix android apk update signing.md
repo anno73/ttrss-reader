@@ -28,7 +28,8 @@ private Maven credential handling. Do not install a local Android SDK.
 
 ## Implementation todos
 
-1. Restore the secret into the standard debug keystore location with
+1. Explicitly set `ANDROID_USER_HOME` and restore the secret into its debug
+   keystore location with
    restrictive permissions. Validate private-key access using `keytool`.
    Gate APK building/uploading on successful signing preparation.
 2. Verify each expected Play/F-Droid APK using CI's `apksigner`, requiring
@@ -57,3 +58,12 @@ certificate in an APK cannot recover the private signing key.
 GitHub secret provisioning and workflow publication require authenticated
 repository access. Report access blockers explicitly. Device testing requires
 device access and must not be claimed from certificate inspection alone.
+
+## CI validation finding
+
+The first validation builds compiled and passed tests, but artifact checks
+correctly rejected a different signer. Gradle's signing report showed that
+AGP resolves the runner's default debug key under
+`/home/runner/.config/.android`, not `/home/runner/.android`. Explicitly setting
+`ANDROID_USER_HOME` makes restoration, Gradle signing, and cleanup use the same
+directory, independent of the runner's XDG configuration.

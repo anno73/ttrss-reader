@@ -16,6 +16,7 @@ import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -129,8 +130,31 @@ public class JSONConnectorTimeoutTest {
 	}
 
 	@Test
-	public void emptyUpdateFeedResponseStillUsesExistingWorkaround() throws Exception {
+	public void emptyResponseKeepsExistingEofErrorBehavior() throws Exception {
 		Response response = response(new java.io.StringReader(""));
+		when(call.execute()).thenReturn(response);
+		Map<String, String> params = new HashMap<>();
+		params.put("op", "updateFeed");
+		params.put("feed_id", "12");
+		assertFalse(noAnswer(params));
+		assertTrue(connector.hasLastError());
+		assertTrue(connector.pullLastError().contains("End of input"));
+	}
+
+	@Test
+	public void emptyJsonResultStillReturnsFalseWithoutError() throws Exception {
+		Response response = response(new java.io.StringReader("{}"));
+		when(call.execute()).thenReturn(response);
+		Map<String, String> params = new HashMap<>();
+		params.put("op", "updateFeed");
+		params.put("feed_id", "12");
+		assertFalse(noAnswer(params));
+		assertFalse(connector.hasLastError());
+	}
+
+	@Test
+	public void malformedUpdateFeedResponseStillUsesExistingWorkaround() throws Exception {
+		Response response = response(new java.io.StringReader("not-json"));
 		when(call.execute()).thenReturn(response);
 		Map<String, String> params = new HashMap<>();
 		params.put("op", "updateFeed");
@@ -146,7 +170,7 @@ public class JSONConnectorTimeoutTest {
 		params.put("op", "shareToPublished");
 		params.put("title", "title");
 		params.put("url", "https://example.org/article");
-		params.put("content", "article-content ".repeat(1000));
+		params.put("content", "article-content \uD83D\uDE00\u4E2D".repeat(1000));
 		assertFalse(noAnswer(params));
 		String message = connector.pullLastError();
 		ArgumentCaptor<String> parts = ArgumentCaptor.forClass(String.class);
@@ -154,8 +178,11 @@ public class JSONConnectorTimeoutTest {
 		String output = String.join("", parts.getAllValues());
 		assertTrue(output.startsWith(message));
 		assertTrue(message.contains(params.get("content")));
-		for (String part : parts.getAllValues())
+		for (String part : parts.getAllValues()) {
 			assertTrue(part.length() <= 1000);
+			assertTrue(part.getBytes(StandardCharsets.UTF_8).length <= 3000);
+			assertFalse(Character.isHighSurrogate(part.charAt(part.length() - 1)));
+		}
 	}
 
 	private Response response(Reader reader) {

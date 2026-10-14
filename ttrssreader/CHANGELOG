@@ -2,6 +2,7 @@
 
 = Changes =
 == Version 1.81 (1) ==
+  * Toggle an article's star by double-tapping it
   * Attempt to build with PRNGFixes again (fixes Issue #264)
   * Fixed Issue #253: "Adding a new feed will put it in a random category"
   * Fixed some FCs (Issue #266)

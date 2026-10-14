@@ -635,7 +635,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			new Updater(getActivity(), new ArticleReadStateUpdater(article, article.isUnread ? 0 : 1)).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 			return true;
 		} else if (itemId == R.id.Article_Menu_MarkStar) {
-			new Updater(getActivity(), new StarredStateUpdater(article, article.isStarred ? 0 : 1)).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+			toggleArticleStarred();
 			return true;
 		} else if (itemId == R.id.Article_Menu_MarkPublish) {
 			new Updater(getActivity(), new PublishedStateUpdater(article, article.isPublished ? 0 : 1)).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -658,6 +658,14 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			return true;
 		}
 		return false;
+	}
+
+	private void toggleArticleStarred() {
+		Activity activity = getActivity();
+		if (article == null || activity == null)
+			return;
+
+		new Updater(activity, new StarredStateUpdater(article, article.isStarred ? 0 : 1)).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 	}
 
 	/**
@@ -943,6 +951,12 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	private class ArticleGestureListener extends SwipeGestureListener {
 		private ArticleGestureListener(ActionBar actionBar, boolean hideActionbar, Activity activity) {
 			super(actionBar, hideActionbar, activity);
+		}
+
+		@Override
+		public boolean onDoubleTap(@NonNull MotionEvent event) {
+			toggleArticleStarred();
+			return true;
 		}
 
 		@Override

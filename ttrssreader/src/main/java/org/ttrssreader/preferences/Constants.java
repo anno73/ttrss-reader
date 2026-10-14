@@ -144,6 +144,7 @@ public class Constants {
 	public static final String CACHE_IMAGE_MAX_SIZE = "CacheImageMaxSizePreference";
 	public static final String CACHE_IMAGE_MIN_SIZE = "CacheImageMinSizePreference";
 	public static final String DELETE_DB_SCHEDULED = "DeleteDBScheduledPreference";
+	public static final String SYNC_ON_STARTUP = "SyncOnStartupPreference";
 	public static final String CACHE_IMAGES_ON_STARTUP = "CacheImagesOnStartupPreference";
 	public static final String CACHE_IMAGES_ONLY_WIFI = "CacheImagesOnlyWifiPreference";
 	public static final String ONLY_USE_WIFI = "OnlyUseWifiPreference";
@@ -155,6 +156,7 @@ public class Constants {
 	public static final int CACHE_IMAGE_MAX_SIZE_DEFAULT = 6 * (int) Utils.MB; // 6 MB
 	public static final int CACHE_IMAGE_MIN_SIZE_DEFAULT = 32 * (int) Utils.KB; // 64 KB
 	public static final boolean DELETE_DB_SCHEDULED_DEFAULT = false;
+	public static final boolean SYNC_ON_STARTUP_DEFAULT = true;
 	public static final boolean CACHE_IMAGES_ON_STARTUP_DEFAULT = false;
 	public static final boolean CACHE_IMAGES_ONLY_WIFI_DEFAULT = false;
 	public static final boolean ONLY_USE_WIFI_DEFAULT = false;

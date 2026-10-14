@@ -19,7 +19,13 @@
 
     <PreferenceCategory android:title="@string/SystemPreferenceCategoryTitle">
         <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="SyncOnStartupPreference"
+            android:summary="@string/SyncOnStartupSummary"
+            android:title="@string/SyncOnStartupTitle" />
+        <CheckBoxPreference
             android:defaultValue="false"
+            android:dependency="SyncOnStartupPreference"
             android:disableDependentsState="false"
             android:key="CacheImagesOnStartupPreference"
             android:summary="@string/CacheImagesOnStartupSummary"

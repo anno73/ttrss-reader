@@ -226,6 +226,8 @@
     <string name="HyphenationLanguage_te">Telugu</string>
     <string name="HyphenationLanguage_tr">Turkish</string>
     <string name="HyphenationLanguage_uk">Ukrainian</string>
+    <string name="SyncOnStartupTitle">Sync on startup and resume</string>
+    <string name="SyncOnStartupSummary">Automatically sync the category/feed overview when opening or resuming the reader and allow configured startup image caching. Disable to browse cached data and refresh manually.</string>
     <string name="CacheImagesOnStartupTitle">Start ImageCache on startup?</string>
     <string name="CacheImagesOnStartupSummary">Enable to start the image-cache on every start of the reader, all articles+images will be fetched in the background.</string>
     <string name="CacheImagesOnlyWifiTitle">Only on Wifi?</string>

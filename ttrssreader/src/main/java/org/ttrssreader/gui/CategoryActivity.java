@@ -101,7 +101,7 @@ public class CategoryActivity extends MenuActivity implements IItemSelectedListe
 		}
 
 		// Start caching if requested
-		if (Controller.getInstance().cacheImagesOnStartup()) {
+		if (Controller.getInstance().syncOnStartup() && Controller.getInstance().cacheImagesOnStartup()) {
 			boolean startCache = true;
 
 			if (Controller.getInstance().cacheImagesOnlyWifi()) {
@@ -203,6 +203,9 @@ public class CategoryActivity extends MenuActivity implements IItemSelectedListe
 
 	@Override
 	protected void doUpdate(boolean forceUpdate) {
+		if (!forceUpdate && !Controller.getInstance().syncOnStartup())
+			return;
+
 		// Only update if no categoryUpdater already running
 		if (categoryUpdater != null) {
 			if (categoryUpdater.getStatus().equals(AsyncTask.Status.FINISHED)) {

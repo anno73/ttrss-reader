@@ -28,6 +28,16 @@ Since google announced that the downloads from google-code will not be available
 
 See [Changelog](https://github.com/nilsbraden/ttrss-reader-fork/wiki/Changelog) for detailed information.
 
+# Automatic synchronization
+Under **Settings > System**, **Sync on startup and resume** is enabled by default.
+Disable it to skip automatic category/feed overview synchronization when opening or
+resuming the reader, and to prevent automatic startup image caching. Cached data
+remains available; use **Refresh** to synchronize manually.
+
+Manual image caching, article fetching while browsing, and Tasker/Locale updates
+are unchanged. Disabling the setting does not cancel work already running or
+change backend request timeouts.
+
 # Note regarding support and F-Droid
 Since [F-Droid](https://f-droid.org/repository/browse/?fdid=org.ttrssreader) is often several months late with the build I have to make this clear: I won't provide support for versions which are not exactly or at least near to the version which is stated above on this site ("Current Version"). Please provide the full version information from the About-box within the app when reporting an issue!
 

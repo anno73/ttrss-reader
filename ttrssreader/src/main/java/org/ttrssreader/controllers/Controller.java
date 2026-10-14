@@ -143,6 +143,7 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 	private Integer cacheImageMaxSize = null;
 	private Integer cacheImageMinSize = null;
 	private Boolean deleteDbScheduled = null;
+	private Boolean syncOnStartup = null;
 	private Boolean cacheImagesOnStartup = null;
 	private Boolean cacheImagesOnlyWifi = null;
 	private Boolean onlyUseWifi = null;
@@ -1220,6 +1221,12 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 	public void setDeleteDBScheduled(boolean isDeleteDBScheduled) {
 		put(DELETE_DB_SCHEDULED, isDeleteDBScheduled);
 		this.deleteDbScheduled = isDeleteDBScheduled;
+	}
+
+	public boolean syncOnStartup() {
+		if (syncOnStartup == null)
+			syncOnStartup = prefs.getBoolean(SYNC_ON_STARTUP, SYNC_ON_STARTUP_DEFAULT);
+		return syncOnStartup;
 	}
 
 	public boolean cacheImagesOnStartup() {

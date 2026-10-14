@@ -84,7 +84,7 @@ public class JSONConnectorTimeoutTest {
 
 	@Test
 	public void bodyReadTimeoutUsesCapturedEndpointAndSurvivesNoAnswerWorkaround() throws Exception {
-		when(call.execute()).thenReturn(response(new Reader() {
+		Response response = response(new Reader() {
 			@Override
 			public int read(char[] buffer, int offset, int length) throws IOException {
 				when(controller.hostname()).thenReturn("https://changed.example.org/api/");
@@ -93,7 +93,8 @@ public class JSONConnectorTimeoutTest {
 			@Override
 			public void close() {
 			}
-		}));
+		});
+		when(call.execute()).thenReturn(response);
 		Map<String, String> params = new HashMap<>();
 		params.put("op", "updateFeed");
 		params.put("feed_id", "12");
@@ -129,7 +130,8 @@ public class JSONConnectorTimeoutTest {
 
 	@Test
 	public void emptyUpdateFeedResponseStillUsesExistingWorkaround() throws Exception {
-		when(call.execute()).thenReturn(response(new java.io.StringReader("")));
+		Response response = response(new java.io.StringReader(""));
+		when(call.execute()).thenReturn(response);
 		Map<String, String> params = new HashMap<>();
 		params.put("op", "updateFeed");
 		params.put("feed_id", "12");

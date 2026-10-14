@@ -12,6 +12,76 @@ Since google announced that the downloads from google-code will not be available
  * [**Download current Version**](https://github.com/nilsbraden/ttrss-reader-fork/releases)
  * ([**Changelog**](https://github.com/nilsbraden/ttrss-reader-fork/wiki/Changelog))
 
+# Installing and updating GitHub Actions APKs
+
+The **Android CI** workflow builds Play and F-Droid debug APKs for this fork
+(`org.ttrssreader.anno73`). In-place Android updates require the same signing
+key on every build. Fresh runners otherwise generate different debug keys,
+causing "App not installed" when replacing an existing installation.
+
+## Configure persistent debug signing
+
+Generate a dedicated key **once**, outside the repository, using the JDK:
+
+```powershell
+keytool -genkeypair -keystore "$env:USERPROFILE\ttrss-reader-debug.keystore" -storetype JKS -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+```
+
+If a keystore has already been provided for this fix, use that file instead;
+do not generate another key. Keep a secure backup. These standard debug
+passwords are not a security boundary: protect the private keystore itself.
+This is debug signing, not a production release-signing setup.
+
+To upload it using an authenticated GitHub CLI without printing key material:
+
+```powershell
+$key = "$env:USERPROFILE\ttrss-reader-debug.keystore" # Or the supplied keystore's path
+[Convert]::ToBase64String([IO.File]::ReadAllBytes($key)) | gh secret set ANDROID_DEBUG_KEYSTORE_BASE64 --repo anno73/ttrss-reader
+```
+
+Alternatively, copy its base64 representation to your local clipboard:
+
+```powershell
+Set-Clipboard -Value ([Convert]::ToBase64String([IO.File]::ReadAllBytes($key)))
+```
+
+In GitHub, open **Settings > Secrets and variables > Actions > New repository
+secret**, name it `ANDROID_DEBUG_KEYSTORE_BASE64`, and paste the clipboard
+contents as its value. Replace the clipboard afterwards with `Set-Clipboard
+-Value " "` (a single space). Never commit the keystore/base64 or paste it into
+issues or chat.
+
+CI restores this key before Gradle runs, validates private-key access, and
+verifies both APKs against its certificate before publishing. If the secret
+is missing, tests still run but APK build/upload are skipped with a notice.
+An invalid secret fails the job. Existing `LOCALE_PLUGIN_MAVEN_USER` and
+`LOCALE_PLUGIN_MAVEN_PASSWORD` secrets are still needed for private dependencies.
+
+Push a change or select **Actions > Android CI > Run workflow** to compile on
+GitHub. Download `ttrss-reader-debug` from the successful run's **Artifacts**,
+extract it, and install the desired flavor's APK. Both flavors share an app ID;
+installing one replaces the other, rather than installing a second app.
+
+## Migrating an existing installation
+
+An APK signed by an old ephemeral CI key cannot be updated with the new key.
+Recovering that original private keystore is the only normal way to preserve
+in-place updates from that installation; its public certificate in the APK
+cannot reconstruct the private key.
+
+If the original key is unavailable, export/back up any supported settings and
+data first, then uninstall the old app and install the first consistently
+signed build. **Uninstalling can delete local app data**, including cached or
+unsynchronized data; do not assume it can all be exported or restored.
+Subsequent APKs signed with this same persistent key can update the app without
+uninstalling. Never replace the signing secret with a newly generated key.
+
+To verify, build twice in separate Actions runs, confirm both runs report the
+same signer SHA-256, and install the second APK over the first on Android.
+Check that installation succeeds and existing settings/data remain intact.
+Do not lower `versionCode` when updating; version downgrades are a separate
+installation failure from a signer mismatch.
+
 # Features
  * Use Swipe for Next/Previous Article
  * Swipe-Area in bottom area of the Article-View to avoid swiping while scrolling

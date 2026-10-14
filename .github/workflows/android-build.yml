@@ -43,6 +43,29 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Restore persistent debug signing key
+        id: signing
+        env:
+          ANDROID_DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$ANDROID_DEBUG_KEYSTORE_BASE64" ]]; then
+            echo "::notice::ANDROID_DEBUG_KEYSTORE_BASE64 is missing; tests will run, but APK build and upload are skipped."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          umask 077
+          mkdir -p "$HOME/.android"
+          keystore="$HOME/.android/debug.keystore"
+          printf '%s' "$ANDROID_DEBUG_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          # A certificate request verifies private-key access, not just the certificate.
+          keytool -certreq -keystore "$keystore" -storepass android \
+            -alias androiddebugkey -keypass android > /dev/null
+          fingerprint=$(keytool -exportcert -keystore "$keystore" -storepass android \
+            -alias androiddebugkey | sha256sum | cut -d ' ' -f 1)
+          echo "sha256=$fingerprint" >> "$GITHUB_OUTPUT"
+          echo "available=true" >> "$GITHUB_OUTPUT"
+
       - name: Test timeout diagnostics
         env:
           ORG_GRADLE_PROJECT_localePluginMavenUser: ${{ secrets.LOCALE_PLUGIN_MAVEN_USER }}
@@ -50,17 +73,39 @@ jobs:
         run: ./gradlew --no-daemon :ttrssreader:testFdroidDebugUnitTest --tests 'org.ttrssreader.net.*Test'
 
       - name: Build debug APK
-#      - name: Build Android app
+        if: steps.signing.outputs.available == 'true'
         env:
           ORG_GRADLE_PROJECT_localePluginMavenUser: ${{ secrets.LOCALE_PLUGIN_MAVEN_USER }}
           ORG_GRADLE_PROJECT_localePluginMavenPassword: ${{ secrets.LOCALE_PLUGIN_MAVEN_PASSWORD }}
         run: ./gradlew --no-daemon assembleDebug
 
+      - name: Verify APK signing identity
+        if: steps.signing.outputs.available == 'true'
+        env:
+          EXPECTED_SIGNER_SHA256: ${{ steps.signing.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          for flavor in fdroid play; do
+            apk="ttrssreader/build/outputs/apk/$flavor/debug/ttrssreader-$flavor-debug.apk"
+            verification=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk")
+            mapfile -t signers < <(printf '%s\n' "$verification" | sed -n \
+              's/^Signer #[0-9]* certificate SHA-256 digest: //p')
+            if [[ ${#signers[@]} -ne 1 || "${signers[0],,}" != "$EXPECTED_SIGNER_SHA256" ]]; then
+              echo "::error::Unexpected signer for $apk; refusing to publish."
+              exit 1
+            fi
+            echo "$flavor APK verified: $EXPECTED_SIGNER_SHA256"
+          done
 
       - name: Upload APK
+        if: steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ttrss-reader-debug
           path: "**/build/outputs/apk/**/*.apk"
           if-no-files-found: error
           retention-days: 14
+
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$HOME/.android/debug.keystore"

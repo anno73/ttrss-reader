@@ -11,6 +11,8 @@ ttrssreader/build/
 .vscode
 
 signingconfig.gradle
+*.keystore
+*.jks
 ttrssreader/google-services.json
 
 /TTRSS-Reader-*.apk

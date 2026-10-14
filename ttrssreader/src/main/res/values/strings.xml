@@ -16,7 +16,7 @@
   -->
 <resources>
 
-    <string name="ApplicationName" translatable="false">TTRSS-Reader</string>
+    <string name="ApplicationName" translatable="false">TTRSS-Reader anno73</string>
     <string name="EditPluginActivity_Label" translatable="false">TTRSS-Reader Plugin Settings</string>
     <string name="IntentPublish">Publish content</string>
     <string name="IntentSubscribe">Subscribe to feed</string>

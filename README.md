@@ -38,6 +38,17 @@ Manual image caching, article fetching while browsing, and Tasker/Locale updates
 are unchanged. Disabling the setting does not cancel work already running or
 change backend request timeouts.
 
+# API timeouts
+Under **Settings > Connection** two numeric settings control the HTTP timeout of
+all backend API calls (connect, read and write):
+ * **API timeout (seconds)**, default 10.
+ * **Lazy server timeout (minutes)**, default 10. Used instead of the seconds
+   value while **Lazy Server** is enabled.
+
+Any positive whole number is accepted; both can also be set per Wi-Fi network.
+Changes apply to the next API request without restarting the app. Image and
+attachment downloads are not affected.
+
 # API timeout diagnostics
 Backend API timeout dialogs and logs include the called endpoint (`URL:`) and
 the JSON request body (`JSON:`), including timeouts while reading a response.
@@ -50,8 +61,8 @@ never included.
 All other parameters remain visible, including search text, article IDs, notes,
 titles, article content, and ordinary URLs. Review diagnostics before sharing
 them. Custom credential parameter names and secrets embedded in paths or
-free-text fields are not automatically detected. Image/resource downloads,
-timeout durations, and retries are unchanged.
+free-text fields are not automatically detected. Image/resource downloads and
+retries are unchanged; see **API timeouts** for configuring timeout durations.
 
 # Note regarding support and F-Droid
 Since [F-Droid](https://f-droid.org/repository/browse/?fdid=org.ttrssreader) is often several months late with the build I have to make this clear: I won't provide support for versions which are not exactly or at least near to the version which is stated above on this site ("Current Version"). Please provide the full version information from the About-box within the app when reporting an issue!

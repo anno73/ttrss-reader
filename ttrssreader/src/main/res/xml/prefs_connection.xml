@@ -66,6 +66,24 @@
             android:key="ConnectionLazyServerPreference"
             android:summary="@string/ConnectionLazyServerPreferenceSummary"
             android:title="@string/ConnectionLazyServerPreferenceTitle" />
+        <org.ttrssreader.preferences.EditIntegerPreference
+            android:order="62"
+            android:name="@string/ConnectionLazyServerTimeoutPreferenceTitle"
+            android:defaultValue="10"
+            android:dependency="ConnectionLazyServerPreference"
+            android:inputType="number"
+            android:key="ConnectionLazyServerTimeoutPreference"
+            android:summary="@string/ConnectionLazyServerTimeoutPreferenceSummary"
+            android:title="@string/ConnectionLazyServerTimeoutPreferenceTitle" />
+
+        <org.ttrssreader.preferences.EditIntegerPreference
+            android:order="65"
+            android:name="@string/ConnectionApiTimeoutPreferenceTitle"
+            android:defaultValue="10"
+            android:inputType="number"
+            android:key="ConnectionApiTimeoutPreference"
+            android:summary="@string/ConnectionApiTimeoutPreferenceSummary"
+            android:title="@string/ConnectionApiTimeoutPreferenceTitle" />
 
         <CheckBoxPreference
             android:order="70"

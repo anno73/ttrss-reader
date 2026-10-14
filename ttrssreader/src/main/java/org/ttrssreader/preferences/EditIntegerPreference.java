@@ -43,6 +43,12 @@ public class EditIntegerPreference extends EditTextPreference {
 	protected String getPersistedString(String defaultReturnValue) {
 		int defaultPersisted = getPersistedInt(-1);
 		int defaultFromConstants = Constants.getDefaultValueInt(getKey(), -1);
+		if (defaultFromConstants == -1) {
+			// Wifi-based preferences have their key prefixed with the SSID
+			String ssid = getExtras().getString(PreferencesActivity.KEY_SSID);
+			if (ssid != null && getKey() != null && getKey().startsWith(ssid))
+				defaultFromConstants = Constants.getDefaultValueInt(getKey().substring(ssid.length()), -1);
+		}
 
 		//Log.d(TAG, String.format("Preference \"%s\" default persisted: %s and default from Constants: %s", getKey(), defaultPersisted, defaultFromConstants));
 		if (defaultPersisted != -1)

@@ -112,6 +112,11 @@
     <string name="ConnectionPasswordPreferenceSummary">The password of your Tiny Tiny RSS account.</string>
     <string name="ConnectionLazyServerPreferenceTitle">Lazy Server</string>
     <string name="ConnectionLazyServerPreferenceSummary">Ask the server to update its feeds before we fetch them.</string>
+    <string name="ConnectionLazyServerTimeoutPreferenceTitle">Lazy Server timeout (minutes)</string>
+    <string name="ConnectionLazyServerTimeoutPreferenceSummary">Connect, read and write timeout for API calls in minutes while Lazy Server is enabled (default: 10).</string>
+    <string name="ConnectionApiTimeoutPreferenceTitle">API timeout (seconds)</string>
+    <string name="ConnectionApiTimeoutPreferenceSummary">Connect, read and write timeout for API calls in seconds (default: 10).</string>
+    <string name="ConnectionTimeoutInvalid">Please enter a positive whole number.</string>
     <string name="ConnectionProxyPreferenceTitle">Use SOCKS Proxy</string>
     <string name="ConnectionProxyPreferenceSummary">Enable connection via SOCKS proxy</string>
     <string name="ConnectionProxyHostPreferenceTitle">Proxy Host</string>

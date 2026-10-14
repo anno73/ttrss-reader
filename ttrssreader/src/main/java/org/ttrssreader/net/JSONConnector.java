@@ -168,16 +168,22 @@ public class JSONConnector {
 	 * - proxyHost
 	 * - proxyPort
 	 * - lazyServer
+	 * - apiTimeoutSeconds
+	 * - lazyServerTimeoutMinutes
 	 * <p>
 	 * If any of these change we need to re-initialize the OkHttpClient, otherwise we can re-use the existing instance, shaving off some ms on every API request.
 	 */
-	private void initHttpClient() {
+	private synchronized void initHttpClient() {
+		Controller controller = Controller.getInstance();
+		boolean lazyServer = controller.lazyServer();
+		int timeoutSeconds = controller.apiTimeoutSeconds();
+		int lazyTimeoutMinutes = controller.lazyServerTimeoutMinutes();
+
 		// Just build a string out of all settings involved here, then check against the old string to see if anything changed in between:
-		String newSettings = Controller.getInstance().useProxy() + Controller.getInstance().proxyHost() + Controller.getInstance().proxyPort() + Controller.getInstance().lazyServer();
+		String newSettings = controller.useProxy() + "|" + controller.proxyHost() + "|" + controller.proxyPort() + "|" + lazyServer + "|" + timeoutSeconds + "|" + lazyTimeoutMinutes;
 
 		if (!currentSettings.equals(newSettings)) {
-			// Set longer timeouts for lazy loading servers
-			TimeUnit timeoutUnit = Controller.getInstance().lazyServer() ? TimeUnit.MINUTES : TimeUnit.SECONDS;
+			long timeout = ApiTimeouts.effectiveTimeoutSeconds(lazyServer, timeoutSeconds, lazyTimeoutMinutes);
 
 			// Build Client-Object:
 			OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
@@ -191,7 +197,9 @@ public class JSONConnector {
 				}
 			}
 			clientBuilder.proxy(getProxy());
-			clientBuilder.readTimeout(10, timeoutUnit);
+			clientBuilder.connectTimeout(timeout, TimeUnit.SECONDS);
+			clientBuilder.readTimeout(timeout, TimeUnit.SECONDS);
+			clientBuilder.writeTimeout(timeout, TimeUnit.SECONDS);
 			this.client = clientBuilder.build();
 
 			// Store new settings
@@ -204,6 +212,9 @@ public class JSONConnector {
 		try {
 			if (sessionId != null)
 				params.put(SID, sessionId);
+
+			// Pick up changed proxy/timeout settings without requiring an app restart
+			initHttpClient();
 
 			JSONObject json = new JSONObject(params);
 

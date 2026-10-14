@@ -92,6 +92,11 @@ not, see http://www.gnu.org/licenses/.
     <string name="ConnectionPasswordPreferenceSummary">Das Passwort für Ihren \"Tiny Tiny RSS\"-Account.</string>
     <string name="ConnectionLazyServerPreferenceTitle">Fauler Server</string>
     <string name="ConnectionLazyServerPreferenceSummary">Feedaktualisierung im Server anstoßen.</string>
+    <string name="ConnectionLazyServerTimeoutPreferenceTitle">Timeout fauler Server (Minuten)</string>
+    <string name="ConnectionLazyServerTimeoutPreferenceSummary">Verbindungs-, Lese- und Schreib-Timeout für API-Aufrufe in Minuten bei aktiviertem faulen Server (Standard: 10).</string>
+    <string name="ConnectionApiTimeoutPreferenceTitle">API-Timeout (Sekunden)</string>
+    <string name="ConnectionApiTimeoutPreferenceSummary">Verbindungs-, Lese- und Schreib-Timeout für API-Aufrufe in Sekunden (Standard: 10).</string>
+    <string name="ConnectionTimeoutInvalid">Bitte eine positive ganze Zahl eingeben.</string>
     <string name="ConnectionSslPreferenceCategoryTitle">SSL-Einstellungen</string>
     <string name="ConnectionSslPreferenceSummary">Alle SSL-Zertifikate akzeptieren.</string>
     <string name="ConnectionTrustHostsPreferenceTitle">Vertraue allen Servern</string>

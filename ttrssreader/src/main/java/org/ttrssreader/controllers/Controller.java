@@ -549,6 +549,37 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 			return prefs.getInt(PROXY_PORT, Constants.PROXY_PORT_DEFAULT);
 	}
 
+	/**
+	 * @return the timeout for backend API calls in seconds (connect, read and write).
+	 */
+	public int apiTimeoutSeconds() {
+		return positiveIntPref(Constants.API_TIMEOUT, Constants.API_TIMEOUT_DEFAULT);
+	}
+
+	/**
+	 * @return the timeout for backend API calls in minutes, used instead of {@link #apiTimeoutSeconds()} when
+	 * {@link #lazyServer()} is enabled.
+	 */
+	public int lazyServerTimeoutMinutes() {
+		return positiveIntPref(Constants.LAZY_SERVER_TIMEOUT, Constants.LAZY_SERVER_TIMEOUT_DEFAULT);
+	}
+
+	private int positiveIntPref(String param, int defaultValue) {
+		// Load from Wifi-Preferences:
+		String key = getStringWithSSID(param, getCurrentSSID(wifiManager), wifibasedPrefsEnabled());
+
+		int value;
+		try {
+			if (prefs.contains(key))
+				value = prefs.getInt(key, defaultValue);
+			else
+				value = prefs.getInt(param, defaultValue);
+		} catch (ClassCastException e) {
+			value = defaultValue;
+		}
+		return value > 0 ? value : defaultValue;
+	}
+
 	public boolean useHttpAuth() {
 		// Load from Wifi-Preferences:
 		String key = getStringWithSSID(USE_HTTP_AUTH, getCurrentSSID(wifiManager), wifibasedPrefsEnabled());

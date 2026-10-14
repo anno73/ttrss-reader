@@ -44,7 +44,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Build debug APK
+#      - name: Build Android app
+        env:
+          ORG_GRADLE_PROJECT_localePluginMavenUser: ${{ secrets.LOCALE_PLUGIN_MAVEN_USER }}
+          ORG_GRADLE_PROJECT_localePluginMavenPassword: ${{ secrets.LOCALE_PLUGIN_MAVEN_PASSWORD }}
         run: ./gradlew --no-daemon assembleDebug
+
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

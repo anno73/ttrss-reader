@@ -13,8 +13,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_USER_HOME: ${{ runner.temp }}/ttrss-android
 
     steps:
       - name: Check out source
@@ -51,6 +49,8 @@ jobs:
           ANDROID_DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
+          export ANDROID_USER_HOME="$RUNNER_TEMP/ttrss-android"
+          echo "ANDROID_USER_HOME=$ANDROID_USER_HOME" >> "$GITHUB_ENV"
           if [[ -z "$ANDROID_DEBUG_KEYSTORE_BASE64" ]]; then
             echo "::notice::ANDROID_DEBUG_KEYSTORE_BASE64 is missing; tests will run, but APK build and upload are skipped."
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -111,4 +111,4 @@ jobs:
 
       - name: Remove signing key
         if: always()
-        run: rm -f "$ANDROID_USER_HOME/debug.keystore"
+        run: rm -f "$RUNNER_TEMP/ttrss-android/debug.keystore"

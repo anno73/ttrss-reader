@@ -6,6 +6,8 @@
 /build
 ttrssreader/build/
 /captures
+.env
+/downloaded-apk
 
 signingconfig.gradle
 ttrssreader/google-services.json

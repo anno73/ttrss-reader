@@ -26,7 +26,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.MalformedJsonException;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.ttrssreader.MyApplication;
 import org.ttrssreader.R;
@@ -69,6 +68,7 @@ public class JSONConnector {
 
 	private static String lastError = "";
 	private static boolean hasLastError = false;
+	private static boolean lastErrorIsTimeout = false;
 
 	private static final String PARAM_OP = "op";
 	private static final String PARAM_USER = "user";
@@ -200,12 +200,12 @@ public class JSONConnector {
 	}
 
 	private Reader doRequest(Map<String, String> params) {
+		RequestDiagnostics diagnostics = null;
 		try {
 			if (sessionId != null)
 				params.put(SID, sessionId);
 
 			JSONObject json = new JSONObject(params);
-			logRequest(json);
 
 			// Build Request-Object:
 			Request.Builder reqBuilder = new Request.Builder();
@@ -220,6 +220,9 @@ public class JSONConnector {
 			}
 
 			Request request = reqBuilder.build();
+			diagnostics = new RequestDiagnostics(request.url(), json.toString());
+			diagnostics.redactCredential(request.header("Authorization"));
+			logMessage(diagnostics.json(), false);
 
 			// Call Server:
 			Response response = this.client.newCall(request).execute();
@@ -234,7 +237,8 @@ public class JSONConnector {
 
 			// Read Response as stream:
 			ResponseBody body = response.body();
-			return body != null ? body.charStream() : null;
+			return body != null ? diagnostics.withUrl(response.request().url())
+					.monitor(body.charStream(), this::reportTimeout) : null;
 
 		} catch (JsonSyntaxException e) {
 			hasLastError = true;
@@ -243,8 +247,12 @@ public class JSONConnector {
 			hasLastError = true;
 			lastError = "SSLPeerUnverifiedException in doRequest(): " + formatException(e);
 		} catch (Exception e) {
-			hasLastError = true;
-			lastError = "Exception in doRequest(): " + formatException(e);
+			if (diagnostics != null && e instanceof IOException && RequestDiagnostics.isTimeout(e)) {
+				reportTimeout(diagnostics, (IOException) e);
+			} else {
+				hasLastError = true;
+				lastError = "Exception in doRequest(): " + formatException(e);
+			}
 		}
 		return null;
 	}
@@ -264,13 +272,27 @@ public class JSONConnector {
 		// Empty
 	}
 
-	private void logRequest(final JSONObject json) throws JSONException {
-		// Filter password and session-id
-		Object paramPw = json.remove(PARAM_PW);
-		Object paramSID = json.remove(SID);
-		Log.i(TAG, json.toString());
-		json.put(PARAM_PW, paramPw);
-		json.put(SID, paramSID);
+	private void reportTimeout(RequestDiagnostics diagnostics, IOException exception) {
+		hasLastError = true;
+		lastErrorIsTimeout = true;
+		lastError = diagnostics.message(exception);
+		logMessage(lastError, true);
+		logMessage(diagnostics.stackTrace(exception), true);
+	}
+
+	private static void logMessage(String message, boolean error) {
+		// Stay below Logcat's byte limit even for non-ASCII article content.
+		for (int start = 0; start < message.length();) {
+			int end = Math.min(start + 1000, message.length());
+			if (end < message.length() && Character.isHighSurrogate(message.charAt(end - 1)))
+				end--;
+			String part = message.substring(start, end);
+			if (error)
+				Log.e(TAG, part);
+			else
+				Log.i(TAG, part);
+			start = end;
+		}
 	}
 
 	private String readResult(Map<String, String> params) throws IOException {
@@ -511,15 +533,17 @@ public class JSONConnector {
 			String result = readResult(params);
 
 			// Reset error, this is only for an api-bug which returns an empty result for updateFeed
-			if (result == null)
+			if (result == null && !lastErrorIsTimeout)
 				pullLastError();
 
 			return "OK".equals(result);
 		} catch (MalformedJsonException mje) {
 			// Reset error, this is only for an api-bug which returns an empty result for updateFeed
-			pullLastError();
+			if (!lastErrorIsTimeout)
+				pullLastError();
 		} catch (IOException e) {
-			e.printStackTrace();
+			if (!RequestDiagnostics.isTimeout(e))
+				e.printStackTrace();
 			if (!hasLastError) {
 				hasLastError = true;
 				lastError = formatException(e);
@@ -662,7 +686,8 @@ public class JSONConnector {
 		} catch (OutOfMemoryError e) {
 			Controller.getInstance().lowMemory(true); // Low memory detected
 		} catch (Exception e) {
-			Log.e(TAG, "Input data could not be read: " + e.getMessage() + " (" + e.getCause() + ")", e);
+			if (!RequestDiagnostics.isTimeout(e))
+				Log.e(TAG, "Input data could not be read: " + e.getMessage() + " (" + e.getCause() + ")", e);
 		}
 
 		return count;
@@ -852,6 +877,8 @@ public class JSONConnector {
 								break;
 						}
 					} catch (IllegalArgumentException | IllegalStateException | IOException e) {
+						if (e instanceof IOException && RequestDiagnostics.isTimeout(e))
+							throw (IOException) e;
 						e.printStackTrace();
 						reader.skipValue();
 						// Not sure when this actually happens, maybe we should also break; out here...
@@ -866,7 +893,8 @@ public class JSONConnector {
 			}
 			reader.endArray();
 		} catch (IOException e) {
-			e.printStackTrace();
+			if (!RequestDiagnostics.isTimeout(e))
+				e.printStackTrace();
 		}
 
 		Log.d(TAG, "getCategories: " + (System.currentTimeMillis() - time) + "ms");
@@ -955,7 +983,8 @@ public class JSONConnector {
 			}
 			reader.endArray();
 		} catch (IOException e) {
-			Log.e(TAG, (e.getMessage() != null ? e.getMessage() : "no exception message available"));
+			if (!RequestDiagnostics.isTimeout(e))
+				Log.e(TAG, (e.getMessage() != null ? e.getMessage() : "no exception message available"));
 		}
 
 		Log.d(TAG, "getFeeds: " + (System.currentTimeMillis() - time) + "ms");
@@ -1053,7 +1082,8 @@ public class JSONConnector {
 					offset += count;
 
 			} catch (IOException e) {
-				e.printStackTrace();
+				if (!RequestDiagnostics.isTimeout(e))
+					e.printStackTrace();
 			}
 			// Empty!
 		}
@@ -1193,7 +1223,8 @@ public class JSONConnector {
 		try {
 			return readResult(params);
 		} catch (IOException e) {
-			e.printStackTrace();
+			if (!RequestDiagnostics.isTimeout(e))
+				e.printStackTrace();
 		}
 
 		return null;
@@ -1268,7 +1299,8 @@ public class JSONConnector {
 			}
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			if (!RequestDiagnostics.isTimeout(e))
+				e.printStackTrace();
 		}
 
 		return ret;
@@ -1292,6 +1324,7 @@ public class JSONConnector {
 		String ret = lastError;
 		lastError = "";
 		hasLastError = false;
+		lastErrorIsTimeout = false;
 		return ret;
 	}
 

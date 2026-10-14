@@ -38,6 +38,21 @@ Manual image caching, article fetching while browsing, and Tasker/Locale updates
 are unchanged. Disabling the setting does not cancel work already running or
 change backend request timeouts.
 
+# API timeout diagnostics
+Backend API timeout dialogs and logs include the called endpoint (`URL:`) and
+the JSON request body (`JSON:`), including timeouts while reading a response.
+Credentials and authentication/session tokens are replaced with
+`VALUE_REDACTED`; the actual request is not modified. This includes login
+usernames/passwords, `sid`, embedded URL credentials, and known credential/token
+query parameters in the endpoint or body URL fields. Authorization headers are
+never included.
+
+All other parameters remain visible, including search text, article IDs, notes,
+titles, article content, and ordinary URLs. Review diagnostics before sharing
+them. Custom credential parameter names and secrets embedded in paths or
+free-text fields are not automatically detected. Image/resource downloads,
+timeout durations, and retries are unchanged.
+
 # Note regarding support and F-Droid
 Since [F-Droid](https://f-droid.org/repository/browse/?fdid=org.ttrssreader) is often several months late with the build I have to make this clear: I won't provide support for versions which are not exactly or at least near to the version which is stated above on this site ("Current Version"). Please provide the full version information from the About-box within the app when reporting an issue!
 

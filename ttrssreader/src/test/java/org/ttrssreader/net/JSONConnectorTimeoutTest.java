@@ -1,0 +1,196 @@
+package org.ttrssreader.net;
+
+import android.util.Log;
+
+import com.google.gson.JsonParser;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.ttrssreader.controllers.Controller;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.net.SocketTimeoutException;
+import java.util.HashMap;
+import java.util.Map;
+
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.Buffer;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
+public class JSONConnectorTimeoutTest {
+	private MockedStatic<Controller> controllerStatic;
+	private MockedStatic<Log> logs;
+	private Controller controller;
+	private JSONConnector connector;
+	private OkHttpClient client;
+	private Call call;
+
+	@Before
+	public void setUp() throws Exception {
+		controllerStatic = mockStatic(Controller.class);
+		logs = mockStatic(Log.class);
+		controller = mock(Controller.class);
+		controllerStatic.when(Controller::getInstance).thenReturn(controller);
+		when(controller.hostname()).thenReturn("https://example.org/api/index.php?token=endpoint-secret");
+		when(controller.proxyHost()).thenReturn("");
+		connector = new JSONConnector();
+		connector.pullLastError();
+		setField("sessionId", "session-secret");
+		client = mock(OkHttpClient.class);
+		call = mock(Call.class);
+		when(client.newCall(any(Request.class))).thenReturn(call);
+		setField("client", client);
+	}
+
+	@After
+	public void tearDown() {
+		if (connector != null)
+			connector.pullLastError();
+		if (logs != null)
+			logs.close();
+		if (controllerStatic != null)
+			controllerStatic.close();
+	}
+
+	@Test
+	public void executionTimeoutPreservesErrorThroughNoAnswerWorkaround() throws Exception {
+		when(call.execute()).thenThrow(new SocketTimeoutException("Read timed out"));
+		Map<String, String> params = new HashMap<>();
+		params.put("op", "updateFeed");
+		params.put("feed_id", "12");
+		assertFalse(noAnswer(params));
+		assertTrue(connector.hasLastError());
+		String message = connector.pullLastError();
+		assertTrue(message.contains("URL: https://example.org/api/index.php?token=VALUE_REDACTED"));
+		assertTrue(message.contains("\"op\":\"updateFeed\""));
+		assertTrue(message.contains("\"feed_id\":\"12\""));
+		assertTrue(message.contains("\"sid\":\"VALUE_REDACTED\""));
+		assertFalse(connector.hasLastError());
+		assertLogged(message);
+		assertOriginalBody("updateFeed");
+	}
+
+	@Test
+	public void bodyReadTimeoutUsesCapturedEndpointAndSurvivesNoAnswerWorkaround() throws Exception {
+		when(call.execute()).thenReturn(response(new Reader() {
+			@Override
+			public int read(char[] buffer, int offset, int length) throws IOException {
+				when(controller.hostname()).thenReturn("https://changed.example.org/api/");
+				throw new SocketTimeoutException("session-secret endpoint-secret");
+			}
+			@Override
+			public void close() {
+			}
+		}));
+		Map<String, String> params = new HashMap<>();
+		params.put("op", "updateFeed");
+		params.put("feed_id", "12");
+		assertFalse(noAnswer(params));
+		assertTrue(connector.hasLastError());
+		String message = connector.pullLastError();
+		assertTrue(message.contains("URL: https://example.org/api/index.php?token=VALUE_REDACTED"));
+		assertFalse(message.contains("changed.example.org"));
+		assertFalse(message.contains("session-secret"));
+		assertFalse(message.contains("endpoint-secret"));
+		assertLogged(message);
+	}
+
+	@Test
+	public void getPrefTimeoutIsAvailableToExistingErrorConsumers() throws Exception {
+		when(call.execute()).thenThrow(new SocketTimeoutException("timeout"));
+		assertNull(connector.getPref("DEFAULT_UPDATE_INTERVAL"));
+		assertTrue(connector.hasLastError());
+		String message = connector.pullLastError();
+		assertTrue(message.contains("\"pref_name\":\"DEFAULT_UPDATE_INTERVAL\""));
+		assertLogged(message);
+		assertOriginalBody("getPref");
+	}
+
+	@Test
+	public void nonTimeoutExecutionErrorsKeepExistingText() throws Exception {
+		when(call.execute()).thenThrow(new IOException("Canceled"));
+		assertNull(connector.getPref("DEFAULT_UPDATE_INTERVAL"));
+		assertTrue(connector.hasLastError());
+		assertEquals("Exception in doRequest(): Exception-Message: Canceled No Exception-Cause available.",
+				connector.pullLastError());
+	}
+
+	@Test
+	public void emptyUpdateFeedResponseStillUsesExistingWorkaround() throws Exception {
+		when(call.execute()).thenReturn(response(new java.io.StringReader("")));
+		Map<String, String> params = new HashMap<>();
+		params.put("op", "updateFeed");
+		params.put("feed_id", "12");
+		assertFalse(noAnswer(params));
+		assertFalse(connector.hasLastError());
+	}
+
+	@Test
+	public void longTimeoutJsonIsFullyLoggedWithoutTruncation() throws Exception {
+		when(call.execute()).thenThrow(new SocketTimeoutException("timeout"));
+		Map<String, String> params = new HashMap<>();
+		params.put("op", "shareToPublished");
+		params.put("title", "title");
+		params.put("url", "https://example.org/article");
+		params.put("content", "article-content ".repeat(1000));
+		assertFalse(noAnswer(params));
+		String message = connector.pullLastError();
+		ArgumentCaptor<String> parts = ArgumentCaptor.forClass(String.class);
+		logs.verify(() -> Log.e(eq("JSONConnector"), parts.capture()), atLeastOnce());
+		String output = String.join("", parts.getAllValues());
+		assertTrue(output.startsWith(message));
+		assertTrue(message.contains(params.get("content")));
+		for (String part : parts.getAllValues())
+			assertTrue(part.length() <= 1000);
+	}
+
+	private Response response(Reader reader) {
+		Response response = mock(Response.class);
+		ResponseBody body = mock(ResponseBody.class);
+		when(response.isSuccessful()).thenReturn(true);
+		when(response.code()).thenReturn(200);
+		when(response.body()).thenReturn(body);
+		when(response.request()).thenReturn(new Request.Builder()
+				.url("https://example.org/api/index.php?token=endpoint-secret").build());
+		when(body.charStream()).thenReturn(reader);
+		return response;
+	}
+
+	private boolean noAnswer(Map<String, String> params) throws Exception {
+		Method method = JSONConnector.class.getDeclaredMethod("doRequestNoAnswer", Map.class);
+		method.setAccessible(true);
+		return (Boolean) method.invoke(connector, params);
+	}
+
+	private void setField(String name, Object value) throws Exception {
+		Field field = JSONConnector.class.getDeclaredField(name);
+		field.setAccessible(true);
+		field.set(connector, value);
+	}
+
+	private void assertLogged(String message) {
+		logs.verify(() -> Log.e("JSONConnector", message));
+	}
+
+	private void assertOriginalBody(String operation) throws IOException {
+		ArgumentCaptor<Request> request = ArgumentCaptor.forClass(Request.class);
+		verify(client).newCall(request.capture());
+		Buffer buffer = new Buffer();
+		request.getValue().body().writeTo(buffer);
+		com.google.gson.JsonObject json = JsonParser.parseString(buffer.readUtf8()).getAsJsonObject();
+		assertEquals(operation, json.get("op").getAsString());
+		assertEquals("session-secret", json.get("sid").getAsString());
+	}
+}

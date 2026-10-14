@@ -43,6 +43,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Test timeout diagnostics
+        env:
+          ORG_GRADLE_PROJECT_localePluginMavenUser: ${{ secrets.LOCALE_PLUGIN_MAVEN_USER }}
+          ORG_GRADLE_PROJECT_localePluginMavenPassword: ${{ secrets.LOCALE_PLUGIN_MAVEN_PASSWORD }}
+        run: ./gradlew --no-daemon :ttrssreader:testFdroidDebugUnitTest --tests 'org.ttrssreader.net.*Test'
+
       - name: Build debug APK
 #      - name: Build Android app
         env:

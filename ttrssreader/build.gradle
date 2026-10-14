@@ -21,7 +21,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = 'org.ttrssreader'
+        applicationId = 'org.ttrssreader.anno73'
         minSdkVersion 23
         targetSdkVersion 36
         multiDexEnabled = true

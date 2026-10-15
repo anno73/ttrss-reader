@@ -14,6 +14,8 @@
 
 ## Validation
 
-- Source diagnostics and resource/manifest checks: pending.
-- The first GitHub Actions compile found that `WebView.HitTestResult` has no video-specific type constant. Video links now use their file extensions for context-menu detection; the retry is pending.
+- Source diagnostics report no errors; edited manifest and resource XML files parse successfully.
+- The first GitHub Actions build identified an unavailable WebView video hit-test constant. Video links now use their file extensions for context-menu detection.
+- GitHub Actions run `38658379476` passed the timeout-diagnostics unit tests, built both debug APK flavors, and verified their signing identity.
+- Downloaded the CI artifact to `downloaded-apk/run-38658379476/ttrss-reader-debug.zip` and extracted both APKs there.
 - Device interaction test: pending.

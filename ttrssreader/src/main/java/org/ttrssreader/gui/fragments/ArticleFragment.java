@@ -240,6 +240,10 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		// Forward results to EasyPermissions
 		EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+
+		if (requestCode == ArticleWebViewClient.RC_STORAGE && articleWebViewClient != null)
+			articleWebViewClient.onStoragePermissionResult(grantResults.length > 0
+					&& grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED);
 	}
 
 	@SuppressLint("ClickableViewAccessibility")

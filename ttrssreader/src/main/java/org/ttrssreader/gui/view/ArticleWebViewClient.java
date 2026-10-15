@@ -58,7 +58,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Locale;
 
-import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class ArticleWebViewClient extends WebViewClient {
@@ -200,7 +199,6 @@ public class ArticleWebViewClient extends WebViewClient {
 		}
 	}
 
-	@AfterPermissionGranted(RC_STORAGE)
 	public void downloadStoredUrl() {
 		if (context == null || urlDownload == null)
 			return;
@@ -221,6 +219,25 @@ public class ArticleWebViewClient extends WebViewClient {
 		} catch (MalformedURLException e) {
 			Log.e(TAG, "Invalid media URL: " + url, e);
 			Utils.showFinishedNotification("Invalid media URL: " + url, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+		}
+	}
+
+	public void onStoragePermissionResult(boolean granted) {
+		if (urlDownload == null)
+			return;
+
+		if (granted) {
+			downloadStoredUrl();
+			return;
+		}
+
+		urlDownload = null;
+		saveToPictures = false;
+		if (context != null) {
+			String message = context.getString(R.string.WebViewClientStoragePermissionDenied);
+			Log.w(TAG, message);
+			Utils.showBackgroundToast(context, message, android.widget.Toast.LENGTH_LONG);
+			Utils.showFinishedNotification(message, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
 		}
 	}
 

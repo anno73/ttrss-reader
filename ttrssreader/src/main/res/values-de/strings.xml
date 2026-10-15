@@ -251,6 +251,7 @@ not, see http://www.gnu.org/licenses/.
     <string name="Utils_DownloadErrorTitle">Fehler</string>
     <string name="Utils_DownloadErrorTicker">Ein Fehler ist aufgetreten…</string>
     <string name="SaveAttachmentTitle">Speicherort für Anhang…</string>
+    <string name="WebViewClientStoragePermissionDenied">Die Speicherberechtigung wurde verweigert. Das Medium wurde nicht gespeichert.</string>
     <string name="CacheFolderMaxSizeTitle">Maximale Größe des Cache-Ordners</string>
     <string name="CacheFolderMaxSizeSummary">Maximale Größe alle zwischengespeicherten Dateien in MB</string>
     <string name="CacheImageMaxSizeTitle">Maximale Größe von zwischengespeicherten Bildern</string>

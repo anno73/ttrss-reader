@@ -39,7 +39,8 @@ public final class MediaSaveFolder {
 		intent.addFlags(GRANTS | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
 				| Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
 		Uri selected = selectedUri();
-		if (selected != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+		if (selected != null && DocumentsContract.isTreeUri(selected)
+				&& Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
 			intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, documentUri(selected));
 		return intent;
 	}

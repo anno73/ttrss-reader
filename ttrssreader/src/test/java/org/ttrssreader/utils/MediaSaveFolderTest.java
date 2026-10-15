@@ -134,6 +134,15 @@ public class MediaSaveFolderTest {
 	}
 
 	@Test
+	public void failedValidationDoesNotRevokePreviouslyPersistedAccess() {
+		when(metadata.getInt(1)).thenReturn(0);
+		assertThrows(IOException.class, () -> MediaSaveFolder.rememberSelection(context,
+				selection(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION)));
+		verify(resolver, never()).releasePersistableUriPermission(any(), anyInt());
+		verify(controller, never()).setMediaSaveFolder(anyString());
+	}
+
+	@Test
 	public void collisionNamesKeepExtensionAndExistingFiles() {
 		assertEquals("photo (2).jpg", MediaSaveFolder.availableName("photo.jpg",
 				new HashSet<>(Arrays.asList("photo.jpg", "photo (1).jpg"))));

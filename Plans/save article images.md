@@ -31,6 +31,8 @@
 - Device testing of that version reported "Primary directory Pictures not allowed" for the MediaStore.Files insertion. This is a collection/path restriction, not a missing runtime permission; the SAF implementation replaces that path.
 - Added focused JUnit/Mockito tests for persisted folder permissions, invalid/cancelled selection, rejected grants, MIME/filename decisions, duplicate naming, exact output bytes, provider-assigned names, and write/cleanup failure handling.
 - Extended the existing GitHub Actions unit-test command to include the media-save tests.
-- Folder-picker CI and APK artifacts: pending.
+- Initial folder-picker CI run `38816533928` passed the expanded unit-test command, built both debug APK flavors, and verified their signing identities.
+- Final validation after guarding the picker hint against invalid stored tree URIs and adding an existing-grant regression test: pending.
+- APK artifact download: pending final validation.
 - Device testing of the folder-picker implementation: pending. Verify first-save selection and resumption, cancelling, persistence after restart, Settings changes/cancellation, revoked grants, duplicate names, JPG/PNG/GIF/WebM, and unchanged long-press/triple-tap/double-tap behavior.
 - No merge until manual tests pass and the user explicitly approves.

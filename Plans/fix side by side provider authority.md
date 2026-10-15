@@ -39,8 +39,12 @@ authority as an alias or require uninstalling the original.
 - No local Android build attempted, per repository instructions.
 - GitHub CLI authentication was recovered using the existing Git credential
   manager without printing or persisting credentials.
-- CI build, existing targeted unit tests, APK checks, and artifact download:
-  pending publication of the task branch.
+- First CI run `38823168896` compiled both APK flavors and passed the existing
+  targeted unit tests, but the added manifest parser rejected the provider
+  declaration. Its attribute matching expected only the abbreviated Android
+  namespace. Updated matching to also accept the full Android namespace URI
+  emitted by aapt2, and added provider output to CI diagnostics. APK publishing
+  remained blocked by the failed check. Follow-up CI validation is pending.
 
 ## Manual acceptance and merge gate
 

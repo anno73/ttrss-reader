@@ -94,6 +94,7 @@ jobs:
               exit 1
             fi
             manifest=$("$aapt2" dump xmltree "$apk" --file AndroidManifest.xml)
+            grep -A 6 'E: provider' <<< "$manifest"
             if grep -Eq 'android:authorities[^=]*="org\.ttrssreader"' <<< "$manifest" ||
                 grep -Fq '${applicationId}' <<< "$manifest"; then
               echo "::error::Legacy authority or unresolved application ID in $apk"
@@ -112,10 +113,10 @@ jobs:
                 name = 0
                 authority = 0
               }
-              provider && /A: android:name/ {
+              provider && /A: (android|http:\/\/schemas.android.com\/apk\/res\/android):name/ {
                 name = ($0 ~ /="org\.ttrssreader\.model\.ListContentProvider"/)
               }
-              provider && /A: android:authorities/ {
+              provider && /A: (android|http:\/\/schemas.android.com\/apk\/res\/android):authorities/ {
                 authority = ($0 ~ /="org\.ttrssreader\.anno73\.listprovider"/)
               }
               END {

@@ -24,6 +24,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 
+import org.ttrssreader.BuildConfig;
 import org.ttrssreader.controllers.DBHelper;
 
 import androidx.annotation.NonNull;
@@ -31,7 +32,7 @@ import androidx.annotation.NonNull;
 public class ListContentProvider extends ContentProvider {
 
 	private static final String TAG = ListContentProvider.class.getSimpleName();
-	private static final String AUTHORITY = "org.ttrssreader";
+	private static final String AUTHORITY = BuildConfig.APPLICATION_ID + ".listprovider";
 
 	// Uri path segments
 	private static final int CATS = 1;

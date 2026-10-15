@@ -118,7 +118,7 @@
 
         <provider
             android:name=".model.ListContentProvider"
-            android:authorities="org.ttrssreader"
+            android:authorities="${applicationId}.listprovider"
             android:exported="false" />
         <provider
             android:name="androidx.core.content.FileProvider"

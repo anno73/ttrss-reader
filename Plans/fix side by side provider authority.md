@@ -65,7 +65,7 @@ authority as an alias or require uninstalling the original.
 
 ## Manual acceptance and merge gate
 
-Pending testing on the affected phone:
+Manual acceptance checklist:
 
 1. Install the corrected APK while leaving the original reader installed.
 2. Open both apps; confirm the original retains its settings/data.
@@ -75,6 +75,11 @@ Pending testing on the affected phone:
 5. If installation fails, capture the Package Manager error before assuming
    the cause or suggesting any uninstall/data loss.
 
-No device connection is available in this session. Source and APK checks cannot
-substitute for device installation. Do not merge into `master` until manual
-tests pass and the user explicitly approves the merge.
+The user confirmed on the affected S24 Ultra: **installation and browsing
+passed; the original app is unaffected**. This verifies side-by-side installation
+and normal browsing. A separate same-key update test on an existing fork
+installation was not reported.
+
+No direct device connection was available in this session; device acceptance is
+based on the user's test result. Do not merge into `master` until the user
+explicitly approves the merge.

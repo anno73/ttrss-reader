@@ -27,9 +27,12 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -45,6 +48,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -60,6 +64,8 @@ import org.htmlcleaner.TagNode;
 import org.htmlcleaner.TagNodeVisitor;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.stringtemplate.v4.ST;
 import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
@@ -89,9 +95,12 @@ import org.ttrssreader.preferences.Constants;
 import org.ttrssreader.utils.AsyncTask;
 import org.ttrssreader.utils.DateUtils;
 import org.ttrssreader.utils.FileUtils;
+import org.ttrssreader.utils.MediaSaveFolder;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -113,11 +122,15 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	private static final String ARTICLE_FEED_ID = "ARTICLE_FEED_ID";
 
 	private static final String ARTICLE_MOVE = "ARTICLE_MOVE";
+	private static final String PENDING_MEDIA_URL = "PENDING_MEDIA_URL";
+	private static final String MEDIA_FOLDER_PICKER_OPEN = "MEDIA_FOLDER_PICKER_OPEN";
+	private static final int REQUEST_MEDIA_FOLDER = 14;
 	private static final int CONTEXT_MENU_SHARE_URL = 1000;
 	private static final int CONTEXT_MENU_SHARE_ARTICLE = 1001;
 	private static final int CONTEXT_MENU_DISPLAY_CAPTION = 1002;
 	private static final int CONTEXT_MENU_COPY_URL = 1003;
 	private static final int CONTEXT_MENU_COPY_CONTENT = 1004;
+	private static final int CONTEXT_MENU_SAVE_IMAGE = 1005;
 
 	private static final String LABEL_COLOR_STRING = "<span style=\"color: %s; background-color: %s\">%s</span>";
 
@@ -142,11 +155,25 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 	private String mSelectedExtra;
 	private String mSelectedAltText;
+	private String mSelectedMediaUrl;
+	private String pendingMediaUrl;
+	private boolean mediaFolderPickerOpen;
 
 	private ArticleJSInterface articleJSInterface;
+	private ArticleWebViewClient articleWebViewClient;
 
 	private GestureDetector gestureDetector = null;
 	private View.OnTouchListener gestureListener = null;
+	private final Handler gestureHandler = new Handler(Looper.getMainLooper());
+	private Runnable pendingDoubleTapStar;
+	private int completedTapCount;
+	private long lastTapUpTime;
+	private float lastTapX;
+	private float lastTapY;
+	private float tapDownX;
+	private float tapDownY;
+	private boolean tapMoved;
+	private boolean consumingTripleTap;
 
 	public static ArticleFragment newInstance(int id, int feedId, int categoryId, boolean selectArticles, int lastMove) {
 		// Create a new fragment instance
@@ -168,6 +195,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	@Override
 	public void onCreate(Bundle instance) {
 		if (instance != null) {
+			pendingMediaUrl = instance.getString(PENDING_MEDIA_URL);
+			mediaFolderPickerOpen = instance.getBoolean(MEDIA_FOLDER_PICKER_OPEN);
 			articleId = instance.getInt(ARTICLE_ID);
 			feedId = instance.getInt(ARTICLE_FEED_ID);
 			categoryId = instance.getInt(FeedHeadlineListFragment.FEED_CAT_ID);
@@ -186,6 +215,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		initData();
 		initUI();
+		resumePendingMediaSave();
 	}
 
 	@Override
@@ -202,6 +232,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 	@Override
 	public void onSaveInstanceState(Bundle instance) {
+		instance.putString(PENDING_MEDIA_URL, pendingMediaUrl);
+		instance.putBoolean(MEDIA_FOLDER_PICKER_OPEN, mediaFolderPickerOpen);
 		instance.putInt(ARTICLE_ID, articleId);
 		instance.putInt(ARTICLE_FEED_ID, feedId);
 		instance.putInt(FeedHeadlineListFragment.FEED_CAT_ID, categoryId);
@@ -210,6 +242,69 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		if (webView != null)
 			webView.saveState(instance);
 		super.onSaveInstanceState(instance);
+	}
+
+	private void saveMedia(String url) {
+		if (mediaFolderPickerOpen) {
+			Toast.makeText(requireContext(), R.string.MediaSaveFolderChooseFirst, Toast.LENGTH_LONG).show();
+			return;
+		}
+		pendingMediaUrl = url;
+		resumePendingMediaSave();
+	}
+
+	private void resumePendingMediaSave() {
+		if (pendingMediaUrl == null || mediaFolderPickerOpen || articleWebViewClient == null)
+			return;
+		Uri folder = MediaSaveFolder.selectedUri();
+		if (folder != null) {
+			try {
+				MediaSaveFolder.requireWritableFolder(requireContext(), folder);
+			} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
+					 | SQLiteException | UnsupportedOperationException e) {
+				Log.w(TAG, "Saved media folder is inaccessible", e);
+				Toast.makeText(requireContext(), getString(R.string.MediaSaveFolderUnavailable, e.getMessage()),
+						Toast.LENGTH_LONG).show();
+				folder = null;
+			}
+		}
+		if (folder == null) {
+			try {
+				mediaFolderPickerOpen = true;
+				startActivityForResult(MediaSaveFolder.pickerIntent(), REQUEST_MEDIA_FOLDER);
+			} catch (ActivityNotFoundException | IllegalArgumentException e) {
+				mediaFolderPickerOpen = false;
+				pendingMediaUrl = null;
+				Log.e(TAG, "Could not open media folder picker", e);
+				Toast.makeText(requireContext(), R.string.MediaSaveFolderPickerUnavailable, Toast.LENGTH_LONG).show();
+			}
+			return;
+		}
+		String url = pendingMediaUrl;
+		pendingMediaUrl = null;
+		articleWebViewClient.saveMedia(url, folder);
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode != REQUEST_MEDIA_FOLDER)
+			return;
+		mediaFolderPickerOpen = false;
+		if (resultCode != Activity.RESULT_OK) {
+			pendingMediaUrl = null;
+			return;
+		}
+		try {
+			MediaSaveFolder.rememberSelection(requireContext(), data);
+			resumePendingMediaSave();
+		} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
+				 | SQLiteException | UnsupportedOperationException e) {
+			pendingMediaUrl = null;
+			Log.e(TAG, "Could not remember selected media folder", e);
+			Toast.makeText(requireContext(), getString(R.string.MediaSaveFolderSelectionFailed, e.getMessage()),
+					Toast.LENGTH_LONG).show();
+		}
 	}
 
 	/*
@@ -221,6 +316,10 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		// Forward results to EasyPermissions
 		EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+
+		if (requestCode == ArticleWebViewClient.RC_STORAGE && articleWebViewClient != null)
+			articleWebViewClient.onStoragePermissionResult(grantResults.length > 0
+					&& grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED);
 	}
 
 	@SuppressLint("ClickableViewAccessibility")
@@ -239,7 +338,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		// Initialize the WebView if necessary
 		if (webView == null) {
 			webView = new MyWebView(getActivity());
-			webView.setWebViewClient(new ArticleWebViewClient(this));
+			articleWebViewClient = new ArticleWebViewClient(this);
+			webView.setWebViewClient(articleWebViewClient);
 			webView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
 			// Set theme background color. Should be possible via xml also.
@@ -279,7 +379,38 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 						new ArticleGestureListener(actionBar, Controller.getInstance().hideActionbar(), getActivity()));
 
 				gestureListener = (v, event) -> {
+					if (event.getActionMasked() == MotionEvent.ACTION_DOWN && isThirdTap(event)) {
+						consumingTripleTap = true;
+						cancelPendingDoubleTapStar();
+					}
+
+					if (consumingTripleTap) {
+						if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+							consumingTripleTap = false;
+							completedTapCount = 0;
+							saveMediaAt(event.getX(), event.getY());
+						} else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+							consumingTripleTap = false;
+							completedTapCount = 0;
+							toggleArticleStarred();
+						}
+						return true;
+					}
+
+					if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+						tapDownX = event.getX();
+						tapDownY = event.getY();
+						tapMoved = false;
+					} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+						float deltaX = event.getX() - tapDownX;
+						float deltaY = event.getY() - tapDownY;
+						int slop = ViewConfiguration.get(requireContext()).getScaledTouchSlop();
+						tapMoved |= deltaX * deltaX + deltaY * deltaY > slop * slop;
+					}
+
 					gestureDetector.onTouchEvent(event);
+					if (event.getActionMasked() == MotionEvent.ACTION_UP)
+						recordTapUp(event, tapMoved);
 					// Call webView.onTouchEvent(event) everytime, seems to fix issues with webview not beeing
 					// refreshed after swiping:
 					return webView.onTouchEvent(event) || v.performClick();
@@ -358,6 +489,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 	@Override
 	public void onDestroy() {
+		gestureHandler.removeCallbacksAndMessages(null);
+		pendingDoubleTapStar = null;
 		super.onDestroy();
 		if (webContainer != null)
 			webContainer.removeAllViews();
@@ -557,6 +690,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		menu.setHeaderTitle(getResources().getString(R.string.ArticleActivity_ShareLink));
 		mSelectedExtra = null;
 		mSelectedAltText = null;
+		mSelectedMediaUrl = null;
 
 		int type = result.getType();
 		boolean image = (type == HitTestResult.SRC_IMAGE_ANCHOR_TYPE || type == HitTestResult.IMAGE_TYPE);
@@ -571,12 +705,25 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		// Images get a context-menu with "Show caption" which displays the content of the title- or alt-attribute
 		if (image) {
-			mSelectedAltText = getAltTextForImageUrl(result.getExtra());
+			mSelectedMediaUrl = result.getExtra();
+			mSelectedAltText = getAltTextForImageUrl(mSelectedMediaUrl);
 			if (mSelectedAltText != null)
 				menu.add(ContextMenu.NONE, CONTEXT_MENU_DISPLAY_CAPTION, 1, getResources().getString(R.string.ArticleActivity_ShowCaption));
 		}
+		if (!image && anchor && isVideoUrl(result.getExtra()))
+			mSelectedMediaUrl = result.getExtra();
+		if (mSelectedMediaUrl != null)
+			menu.add(ContextMenu.NONE, CONTEXT_MENU_SAVE_IMAGE, 5, getResources().getString(
+					image ? R.string.ArticleActivity_SaveImage : R.string.ArticleActivity_SaveMedia));
 		menu.add(ContextMenu.NONE, CONTEXT_MENU_SHARE_ARTICLE, 10, getResources().getString(R.string.ArticleActivity_ShareArticle));
 		menu.add(ContextMenu.NONE, CONTEXT_MENU_COPY_CONTENT, 4, getResources().getString(R.string.ArticleActivity_CopyContent));
+	}
+
+	private boolean isVideoUrl(String url) {
+		if (url == null)
+			return false;
+		String path = Uri.parse(url).getLastPathSegment();
+		return path != null && FileUtils.VIDEO_MIME.equals(FileUtils.getMimeType(path.toLowerCase(Locale.ROOT)));
 	}
 
 	public void onPrepareOptionsMenu(@NonNull Menu menu) {
@@ -789,6 +936,12 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 					fragment.show(getActivity().getSupportFragmentManager(), ImageCaptionDialog.DIALOG_CAPTION);
 				}
 				return true;
+			case CONTEXT_MENU_SAVE_IMAGE:
+				if (mSelectedMediaUrl != null && articleWebViewClient != null) {
+					saveMedia(mSelectedMediaUrl);
+					return true;
+				}
+				break;
 			case CONTEXT_MENU_SHARE_ARTICLE:
 				// default behavior is to share the article URL
 				shareIntent = getUrlShareIntent(article.url);
@@ -948,6 +1101,85 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		return html;
 	}
 
+	private boolean isThirdTap(MotionEvent event) {
+		if (!Controller.getInstance().saveImageOnTripleTap() || pendingDoubleTapStar == null || completedTapCount < 2)
+			return false;
+
+		long elapsed = event.getEventTime() - lastTapUpTime;
+		float deltaX = event.getX() - lastTapX;
+		float deltaY = event.getY() - lastTapY;
+		int slop = ViewConfiguration.get(requireContext()).getScaledDoubleTapSlop();
+		return elapsed <= ViewConfiguration.getDoubleTapTimeout() && deltaX * deltaX + deltaY * deltaY <= slop * slop;
+	}
+
+	private void recordTapUp(MotionEvent event, boolean moved) {
+		if (!Controller.getInstance().saveImageOnTripleTap())
+			return;
+		if (moved) {
+			completedTapCount = 0;
+			return;
+		}
+
+		long elapsed = event.getEventTime() - lastTapUpTime;
+		float deltaX = event.getX() - lastTapX;
+		float deltaY = event.getY() - lastTapY;
+		int slop = ViewConfiguration.get(requireContext()).getScaledDoubleTapSlop();
+		boolean consecutiveTap = completedTapCount > 0
+				&& elapsed <= ViewConfiguration.getDoubleTapTimeout()
+				&& deltaX * deltaX + deltaY * deltaY <= slop * slop;
+
+		completedTapCount = consecutiveTap ? completedTapCount + 1 : 1;
+		lastTapUpTime = event.getEventTime();
+		lastTapX = event.getX();
+		lastTapY = event.getY();
+
+		if (completedTapCount == 2 && pendingDoubleTapStar != null) {
+			gestureHandler.removeCallbacks(pendingDoubleTapStar);
+			gestureHandler.postDelayed(pendingDoubleTapStar, ViewConfiguration.getDoubleTapTimeout());
+		}
+	}
+
+	private void cancelPendingDoubleTapStar() {
+		if (pendingDoubleTapStar != null) {
+			gestureHandler.removeCallbacks(pendingDoubleTapStar);
+			pendingDoubleTapStar = null;
+		}
+	}
+
+	private void saveMediaAt(float x, float y) {
+		if (webView == null || articleWebViewClient == null) {
+			toggleArticleStarred();
+			return;
+		}
+
+		float scale = webView.getScale();
+		float cssX = (x + webView.getScrollX()) / scale;
+		float cssY = (y + webView.getScrollY()) / scale;
+		String script = "(function(){var e=document.elementFromPoint(" + cssX + "," + cssY + ");"
+				+ "while(e){var t=(e.tagName||'').toLowerCase();"
+				+ "if(t==='img')return e.currentSrc||e.src||'';"
+				+ "if(t==='video'){var s=e.querySelector('source');return e.currentSrc||e.src||(s&&s.src)||e.poster||'';}"
+				+ "e=e.parentElement;}return '';})()";
+		try {
+			webView.evaluateJavascript(script, value -> {
+				try {
+					String url = new JSONArray("[" + value + "]").optString(0, "");
+					if (!url.isEmpty() && !"null".equals(url)) {
+						saveMedia(url);
+					} else {
+						toggleArticleStarred();
+					}
+				} catch (JSONException e) {
+					Log.e(TAG, "Could not identify the media under the triple-tap", e);
+					toggleArticleStarred();
+				}
+			});
+		} catch (RuntimeException e) {
+			Log.e(TAG, "Could not inspect the media under the triple-tap", e);
+			toggleArticleStarred();
+		}
+	}
+
 	private class ArticleGestureListener extends SwipeGestureListener {
 		private ArticleGestureListener(ActionBar actionBar, boolean hideActionbar, Activity activity) {
 			super(actionBar, hideActionbar, activity);
@@ -955,7 +1187,18 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		@Override
 		public boolean onDoubleTap(@NonNull MotionEvent event) {
-			toggleArticleStarred();
+			if (!Controller.getInstance().saveImageOnTripleTap()) {
+				toggleArticleStarred();
+				return true;
+			}
+
+			cancelPendingDoubleTapStar();
+			pendingDoubleTapStar = () -> {
+				pendingDoubleTapStar = null;
+				completedTapCount = 0;
+				toggleArticleStarred();
+			};
+			gestureHandler.postDelayed(pendingDoubleTapStar, ViewConfiguration.getDoubleTapTimeout());
 			return true;
 		}
 

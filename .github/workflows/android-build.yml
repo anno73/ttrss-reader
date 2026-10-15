@@ -68,11 +68,11 @@ jobs:
           echo "sha256=$fingerprint" >> "$GITHUB_OUTPUT"
           echo "available=true" >> "$GITHUB_OUTPUT"
 
-      - name: Test timeout diagnostics
+      - name: Test timeout diagnostics and media saving
         env:
           ORG_GRADLE_PROJECT_localePluginMavenUser: ${{ secrets.LOCALE_PLUGIN_MAVEN_USER }}
           ORG_GRADLE_PROJECT_localePluginMavenPassword: ${{ secrets.LOCALE_PLUGIN_MAVEN_PASSWORD }}
-        run: ./gradlew --no-daemon :ttrssreader:testFdroidDebugUnitTest --tests 'org.ttrssreader.net.*Test'
+        run: ./gradlew --no-daemon :ttrssreader:testFdroidDebugUnitTest --tests 'org.ttrssreader.net.*Test' --tests 'org.ttrssreader.utils.MediaSaveFolderTest'
 
       - name: Build debug APK
         if: steps.signing.outputs.available == 'true'

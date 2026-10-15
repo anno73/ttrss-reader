@@ -21,6 +21,7 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -30,6 +31,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import org.ttrssreader.MyApplication;
 import org.ttrssreader.R;
@@ -39,6 +41,7 @@ import org.ttrssreader.gui.MediaPlayerActivity;
 import org.ttrssreader.gui.fragments.ArticleFragment;
 import org.ttrssreader.utils.AsyncTask;
 import org.ttrssreader.utils.FileUtils;
+import org.ttrssreader.utils.MediaSaveFolder;
 import org.ttrssreader.utils.Utils;
 
 import java.io.BufferedInputStream;
@@ -46,13 +49,13 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Locale;
 
-import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class ArticleWebViewClient extends WebViewClient {
@@ -158,6 +161,31 @@ public class ArticleWebViewClient extends WebViewClient {
 
 	private void checkStoragePermissionAndDownload(String url) {
 		urlDownload = url;
+		checkStoragePermission();
+	}
+
+	public void saveMedia(String url, Uri folder) {
+		if (url == null || url.isEmpty()) {
+			Log.w(TAG, "Cannot save media without a URL");
+			return;
+		}
+		if (context == null) {
+			Log.e(TAG, "Cannot save media without a context");
+			return;
+		}
+
+		Utils.showBackgroundToast(context, context.getString(R.string.ArticleActivity_SavingMedia), Toast.LENGTH_SHORT);
+		try {
+			new AsyncMediaSaver(context, folder).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new URL(url));
+		} catch (MalformedURLException e) {
+			Log.e(TAG, "Invalid media URL: " + url, e);
+			Utils.showBackgroundToast(context,
+					context.getString(R.string.ArticleActivity_MediaSaveFailed, e.getMessage()), Toast.LENGTH_LONG);
+			Utils.showFinishedNotification("Invalid media URL: " + url, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+		}
+	}
+
+	private void checkStoragePermission() {
 		if (parentFragment == null)
 			return;
 
@@ -173,18 +201,38 @@ public class ArticleWebViewClient extends WebViewClient {
 		}
 	}
 
-	@AfterPermissionGranted(RC_STORAGE)
 	public void downloadStoredUrl() {
 		if (context == null || urlDownload == null)
 			return;
 
-		Log.i(TAG, "Downloading file: " + urlDownload);
-		try {
-			new AsyncMediaDownloader(context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new URL(urlDownload));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
+		String url = urlDownload;
 		urlDownload = null;
+
+		Log.i(TAG, "Downloading file: " + url);
+		try {
+			new AsyncMediaDownloader(context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new URL(url));
+		} catch (MalformedURLException e) {
+			Log.e(TAG, "Invalid media URL: " + url, e);
+			Utils.showFinishedNotification("Invalid media URL: " + url, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+		}
+	}
+
+	public void onStoragePermissionResult(boolean granted) {
+		if (urlDownload == null)
+			return;
+
+		if (granted) {
+			downloadStoredUrl();
+			return;
+		}
+
+		urlDownload = null;
+		if (context != null) {
+			String message = context.getString(R.string.WebViewClientStoragePermissionDenied);
+			Log.w(TAG, message);
+			Utils.showBackgroundToast(context, message, android.widget.Toast.LENGTH_LONG);
+			Utils.showFinishedNotification(message, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+		}
 	}
 
 	private static class AsyncMediaDownloader extends AsyncTask<URL, Void, Void> {
@@ -287,6 +335,58 @@ public class ArticleWebViewClient extends WebViewClient {
 				}
 			}
 		}
+	}
+
+	private static class AsyncMediaSaver extends AsyncTask<URL, Void, Void> {
+		private final WeakReference<Context> contextRef;
+		private final Uri folder;
+
+		AsyncMediaSaver(Context context, Uri folder) {
+			contextRef = new WeakReference<>(context.getApplicationContext());
+			this.folder = folder;
+		}
+
+		@Override
+		protected Void doInBackground(URL... urls) {
+			Context context = contextRef.get();
+			if (context == null || urls.length == 0) {
+				Log.e(TAG, "Cannot save media: context or URL is unavailable");
+				return null;
+			}
+			long start = System.currentTimeMillis();
+			Utils.showRunningNotification(context, false, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+			String fileName = null;
+
+			try {
+				String folderName = MediaSaveFolder.displayName(context, folder);
+				URLConnection connection = Controller.getInstance().openConnection(urls[0]);
+				String savedName;
+				try (InputStream input = new BufferedInputStream(connection.getInputStream())) {
+					fileName = MediaSaveFolder.fileName(connection.getURL().toString(),
+							connection.getHeaderField("Content-Disposition"));
+					String mimeType = MediaSaveFolder.mimeType(fileName, connection.getContentType());
+					savedName = MediaSaveFolder.write(context, folder, fileName, mimeType, input);
+				}
+
+				int seconds = (int) ((System.currentTimeMillis() - start) / Utils.SECOND);
+				String message = context.getString(R.string.ArticleActivity_MediaSaved, folderName, savedName);
+				Utils.showBackgroundToast(context,
+						message, Toast.LENGTH_LONG);
+				Utils.showFinishedNotification(message, seconds, false, context,
+						Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+			} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
+					 | SQLiteException | UnsupportedOperationException e) {
+				String message = "Could not save media " + (fileName == null ? "" : fileName + ": ") + e.getMessage();
+				Log.e(TAG, message, e);
+				Utils.showBackgroundToast(context,
+						context.getString(R.string.ArticleActivity_MediaSaveFailed, e.getMessage()), Toast.LENGTH_LONG);
+				Utils.showFinishedNotification(message, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+			} finally {
+				Utils.showRunningNotification(context, true, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
+			}
+			return null;
+		}
+
 	}
 
 	/*

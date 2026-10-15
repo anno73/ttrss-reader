@@ -10,6 +10,9 @@
 
     <!-- Download -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <!-- Vibrate on last article/feed -->
     <uses-permission android:name="android.permission.VIBRATE" />

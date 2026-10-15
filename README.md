@@ -87,6 +87,7 @@ installation failure from a signer mismatch.
  * Use Swipe for Next/Previous Article
  * Swipe-Area in bottom area of the Article-View to avoid swiping while scrolling
  * Show or download images/videos/music attached to Articles
+ * Save article images and videos to a folder selected with the system folder picker
  * Share URL via Twitter/SMS/Mail
  * Mark everything (whole category or all categories) as read
  * Navigate through articles with volume-buttons
@@ -98,6 +99,20 @@ installation failure from a signer mismatch.
  * Fast JSON-Parsing with stream-based parser GSON 
 
 See [Changelog](https://github.com/nilsbraden/ttrss-reader-fork/wiki/Changelog) for detailed information.
+
+# Saving article media
+When saving an article image or video through its long-press menu, choose a folder
+in the system picker on the first save. The app remembers that folder across
+restarts. Files are saved directly into it with their original name and format;
+duplicate names get a numbered suffix rather than overwriting existing files.
+To use `Pictures/tt-rss`, create or select that folder in the picker.
+
+Change the destination under **Settings > Usage > Media save folder**.
+Optional triple-tap saving uses the same folder and is disabled by default.
+Cancelling the picker cancels the pending save. If folder access is lost, the next
+save explains the problem and asks for a folder again. No broad storage permission
+is needed for this feature; Android still restricts which folders can be selected.
+The separate attachment-download location setting is unchanged.
 
 # Automatic synchronization
 Under **Settings > System**, **Sync on startup and resume** is enabled by default.

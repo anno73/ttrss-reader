@@ -878,6 +878,18 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 		return swipeArticleMarkRead;
 	}
 
+	public boolean saveImageOnTripleTap() {
+		return prefs.getBoolean(SAVE_IMAGE_ON_TRIPLE_TAP, SAVE_IMAGE_ON_TRIPLE_TAP_DEFAULT);
+	}
+
+	public String mediaSaveFolder() {
+		return prefs.getString(MEDIA_SAVE_FOLDER, Constants.EMPTY);
+	}
+
+	public void setMediaSaveFolder(String uri) {
+		put(MEDIA_SAVE_FOLDER, uri);
+	}
+
 	// ******* DISPLAY-Options ****************************
 
 	public boolean animations() {

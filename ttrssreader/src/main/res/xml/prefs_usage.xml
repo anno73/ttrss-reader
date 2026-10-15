@@ -24,6 +24,15 @@
             android:key="UsageOpenUrlEmptyArticlePreference"
             android:summary="@string/UsageOpenUrlEmptyArticleSummary"
             android:title="@string/UsageOpenUrlEmptyArticleTitle"/>
+        <Preference
+            android:key="MediaSaveFolder"
+            android:summary="@string/MediaSaveFolderNotSelected"
+            android:title="@string/MediaSaveFolderTitle"/>
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="SaveImageOnTripleTap"
+            android:summary="@string/SaveImageOnTripleTapSummary"
+            android:title="@string/SaveImageOnTripleTapTitle"/>
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="UsageUseVolumeKeysPreference"

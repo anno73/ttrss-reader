@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.UriPermission;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -21,6 +22,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -229,6 +234,39 @@ public class MediaSaveFolderTest {
 		assertThrows(IOException.class, () -> MediaSaveFolder.write(context, tree, "photo.jpg", "image/jpeg",
 				new ByteArrayInputStream(new byte[]{1})));
 		documents.verify(() -> DocumentsContract.createDocument(any(), any(), anyString(), anyString()), never());
+	}
+
+	@Test
+	public void saverDoesNotRequirePrimaryExternalStorage() throws Exception {
+		URL url = new URL("https://host/photo.jpg");
+		URLConnection connection = mock(URLConnection.class);
+		when(context.getApplicationContext()).thenReturn(context);
+		when(controller.openConnection(url)).thenReturn(connection);
+		when(connection.getURL()).thenReturn(url);
+		when(connection.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[]{1}));
+		when(connection.getContentType()).thenReturn("image/jpeg");
+		try (MockedStatic<MediaSaveFolder> folders = mockStatic(MediaSaveFolder.class);
+			 MockedStatic<Environment> storage = mockStatic(Environment.class);
+			 MockedStatic<Utils> utils = mockStatic(Utils.class)) {
+			storage.when(Environment::getExternalStorageState).thenReturn(Environment.MEDIA_UNMOUNTED);
+			folders.when(() -> MediaSaveFolder.displayName(context, tree)).thenReturn("Selected folder");
+			folders.when(() -> MediaSaveFolder.fileName(url.toString(), null)).thenReturn("photo.jpg");
+			folders.when(() -> MediaSaveFolder.mimeType("photo.jpg", "image/jpeg")).thenReturn("image/jpeg");
+			folders.when(() -> MediaSaveFolder.write(eq(context), eq(tree), eq("photo.jpg"),
+					eq("image/jpeg"), any())).thenReturn("photo.jpg");
+
+			Class<?> saver = Class.forName("org.ttrssreader.gui.view.ArticleWebViewClient$AsyncMediaSaver");
+			Constructor<?> constructor = saver.getDeclaredConstructor(Context.class, Uri.class);
+			constructor.setAccessible(true);
+			Object instance = constructor.newInstance(context, tree);
+			Method background = saver.getDeclaredMethod("doInBackground", URL[].class);
+			background.setAccessible(true);
+			background.invoke(instance, (Object) new URL[]{url});
+
+			folders.verify(() -> MediaSaveFolder.write(eq(context), eq(tree), eq("photo.jpg"),
+					eq("image/jpeg"), any()));
+			storage.verify(Environment::getExternalStorageState, never());
+		}
 	}
 
 	private Intent selection(int flags) {

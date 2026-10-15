@@ -16,6 +16,7 @@
 - Preserve downloaded bytes without conversion; consider Content-Disposition for the filename, preserve source extensions, avoid overwriting duplicate names, and report the provider-assigned saved name.
 - Remove newly created incomplete documents if a write fails; log cleanup failures without hiding the original error.
 - Do not request storage permissions for this media-saving path. Preserve the separate legacy attachment downloader and its permission flow.
+- Do not gate SAF saves on the primary external-storage mount state: the selected provider may be on another volume or in the cloud.
 - Keep context-menu saving available independently of the triple-tap setting.
 - Add the setting to Usage preferences and provide English and German labels.
 
@@ -32,8 +33,9 @@
 - Added focused JUnit/Mockito tests for persisted folder permissions, invalid/cancelled selection, rejected grants, MIME/filename decisions, duplicate naming, exact output bytes, provider-assigned names, and write/cleanup failure handling.
 - Extended the existing GitHub Actions unit-test command to include the media-save tests.
 - Initial folder-picker CI run `38816533928` passed the expanded unit-test command, built both debug APK flavors, and verified their signing identities.
-- Final code validation run `38816880959` passed the expanded unit-test command, built both APK flavors, and verified their signing identities, including the picker-hint guard and existing-grant regression test.
+- Code validation run `38816880959` passed the expanded unit-test command, built both APK flavors, and verified their signing identities, including the picker-hint guard and existing-grant regression test.
 - Downloaded and extracted both APKs under `downloaded-apk/run-38816880959/`. Verified the downloaded ZIP against GitHub's artifact SHA-256 digest (`5058dc224eb60ac71141556ed9fcdc05ec86342d34ff4c0e5c70e589b5658668`).
 - Source diagnostics report no errors and the English/German strings and Usage preference XML parse successfully. Local test discovery did not find the Android JVM tests; the required GitHub Actions Gradle command ran them instead. No local APK build was attempted.
+- Final review removed the old primary-storage mount-state gate from the SAF worker and added a worker-level regression test proving that saving invokes the selected provider even when primary external storage is unmounted. Final CI and replacement artifacts for this adjustment: pending.
 - Device testing of the folder-picker implementation: pending. Verify first-save selection and resumption, cancelling, persistence after restart, Settings changes/cancellation, revoked grants, duplicate names, JPG/PNG/GIF/WebM, and unchanged long-press/triple-tap/double-tap behavior.
 - No merge until manual tests pass and the user explicitly approves.

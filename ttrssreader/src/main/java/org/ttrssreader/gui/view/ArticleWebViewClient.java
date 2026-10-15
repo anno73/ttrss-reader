@@ -353,14 +353,6 @@ public class ArticleWebViewClient extends WebViewClient {
 				Log.e(TAG, "Cannot save media: context or URL is unavailable");
 				return null;
 			}
-			if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-				String message = "External storage is unavailable; media was not saved.";
-				Log.w(TAG, message);
-				Utils.showBackgroundToast(context, message, Toast.LENGTH_LONG);
-				Utils.showFinishedNotification(message, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
-				return null;
-			}
-
 			long start = System.currentTimeMillis();
 			Utils.showRunningNotification(context, false, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
 			String fileName = null;

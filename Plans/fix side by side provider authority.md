@@ -44,7 +44,24 @@ authority as an alias or require uninstalling the original.
   declaration. Its attribute matching expected only the abbreviated Android
   namespace. Updated matching to also accept the full Android namespace URI
   emitted by aapt2, and added provider output to CI diagnostics. APK publishing
-  remained blocked by the failed check. Follow-up CI validation is pending.
+  remained blocked by the failed check.
+- Follow-up [CI run 38823389482](https://github.com/anno73/ttrss-reader/actions/runs/38823389482)
+  succeeded for commit `a4e4a369`: existing targeted unit tests, both debug APK
+  builds, both package/provider checks, and both signing checks passed.
+  The logs confirmed aapt2 uses the full Android namespace URI.
+- Both APKs use the expected persistent signer SHA-256:
+  `28a981d4bf6d96a6d775be02e3d69dece5228c52ddc4fc17f39fb3e788ad9a79`.
+- Downloaded and extracted both APKs into
+  `downloaded-apk/run-38823389482/ttrssreader/build/outputs/apk/`:
+  - `play/debug/ttrssreader-play-debug.apk` (12,545,313 bytes).
+  - `fdroid/debug/ttrssreader-fdroid-debug.apk` (12,019,879 bytes).
+- Inspected the downloaded APKs' compiled DEX files and confirmed all three
+  complete category/feed/headline content URIs use
+  `org.ttrssreader.anno73.listprovider` in both flavors. This checks the compiled
+  Java identity as well as the manifest checks already performed in CI.
+- Branch commits were pushed successfully. Generated APKs remain ignored and
+  are not committed. This validation-record-only update uses `[skip ci]`:
+  the APKs above correspond to the tested code commit `a4e4a369`.
 
 ## Manual acceptance and merge gate
 

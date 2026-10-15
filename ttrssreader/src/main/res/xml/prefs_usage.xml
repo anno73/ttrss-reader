@@ -25,6 +25,11 @@
             android:summary="@string/UsageOpenUrlEmptyArticleSummary"
             android:title="@string/UsageOpenUrlEmptyArticleTitle"/>
         <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="SaveImageOnTripleTap"
+            android:summary="@string/SaveImageOnTripleTapSummary"
+            android:title="@string/SaveImageOnTripleTapTitle"/>
+        <CheckBoxPreference
             android:defaultValue="true"
             android:key="UsageUseVolumeKeysPreference"
             android:summary="@string/UsageUseVolumeKeysSummary"

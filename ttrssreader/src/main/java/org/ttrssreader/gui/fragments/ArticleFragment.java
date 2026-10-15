@@ -30,6 +30,8 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -45,6 +47,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -60,6 +63,8 @@ import org.htmlcleaner.TagNode;
 import org.htmlcleaner.TagNodeVisitor;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.stringtemplate.v4.ST;
 import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
@@ -118,6 +123,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	private static final int CONTEXT_MENU_DISPLAY_CAPTION = 1002;
 	private static final int CONTEXT_MENU_COPY_URL = 1003;
 	private static final int CONTEXT_MENU_COPY_CONTENT = 1004;
+	private static final int CONTEXT_MENU_SAVE_IMAGE = 1005;
 
 	private static final String LABEL_COLOR_STRING = "<span style=\"color: %s; background-color: %s\">%s</span>";
 
@@ -142,11 +148,23 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 	private String mSelectedExtra;
 	private String mSelectedAltText;
+	private String mSelectedMediaUrl;
 
 	private ArticleJSInterface articleJSInterface;
+	private ArticleWebViewClient articleWebViewClient;
 
 	private GestureDetector gestureDetector = null;
 	private View.OnTouchListener gestureListener = null;
+	private final Handler gestureHandler = new Handler(Looper.getMainLooper());
+	private Runnable pendingDoubleTapStar;
+	private int completedTapCount;
+	private long lastTapUpTime;
+	private float lastTapX;
+	private float lastTapY;
+	private float tapDownX;
+	private float tapDownY;
+	private boolean tapMoved;
+	private boolean consumingTripleTap;
 
 	public static ArticleFragment newInstance(int id, int feedId, int categoryId, boolean selectArticles, int lastMove) {
 		// Create a new fragment instance
@@ -239,7 +257,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		// Initialize the WebView if necessary
 		if (webView == null) {
 			webView = new MyWebView(getActivity());
-			webView.setWebViewClient(new ArticleWebViewClient(this));
+			articleWebViewClient = new ArticleWebViewClient(this);
+			webView.setWebViewClient(articleWebViewClient);
 			webView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
 			// Set theme background color. Should be possible via xml also.
@@ -279,7 +298,38 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 						new ArticleGestureListener(actionBar, Controller.getInstance().hideActionbar(), getActivity()));
 
 				gestureListener = (v, event) -> {
+					if (event.getActionMasked() == MotionEvent.ACTION_DOWN && isThirdTap(event)) {
+						consumingTripleTap = true;
+						cancelPendingDoubleTapStar();
+					}
+
+					if (consumingTripleTap) {
+						if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+							consumingTripleTap = false;
+							completedTapCount = 0;
+							saveMediaAt(event.getX(), event.getY());
+						} else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+							consumingTripleTap = false;
+							completedTapCount = 0;
+							toggleArticleStarred();
+						}
+						return true;
+					}
+
+					if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+						tapDownX = event.getX();
+						tapDownY = event.getY();
+						tapMoved = false;
+					} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+						float deltaX = event.getX() - tapDownX;
+						float deltaY = event.getY() - tapDownY;
+						int slop = ViewConfiguration.get(requireContext()).getScaledTouchSlop();
+						tapMoved |= deltaX * deltaX + deltaY * deltaY > slop * slop;
+					}
+
 					gestureDetector.onTouchEvent(event);
+					if (event.getActionMasked() == MotionEvent.ACTION_UP)
+						recordTapUp(event, tapMoved);
 					// Call webView.onTouchEvent(event) everytime, seems to fix issues with webview not beeing
 					// refreshed after swiping:
 					return webView.onTouchEvent(event) || v.performClick();
@@ -358,6 +408,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 	@Override
 	public void onDestroy() {
+		gestureHandler.removeCallbacksAndMessages(null);
+		pendingDoubleTapStar = null;
 		super.onDestroy();
 		if (webContainer != null)
 			webContainer.removeAllViews();
@@ -557,9 +609,11 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		menu.setHeaderTitle(getResources().getString(R.string.ArticleActivity_ShareLink));
 		mSelectedExtra = null;
 		mSelectedAltText = null;
+		mSelectedMediaUrl = null;
 
 		int type = result.getType();
 		boolean image = (type == HitTestResult.SRC_IMAGE_ANCHOR_TYPE || type == HitTestResult.IMAGE_TYPE);
+		boolean video = type == HitTestResult.SRC_VIDEO_ANCHOR_TYPE;
 		boolean anchor = (type == HitTestResult.SRC_IMAGE_ANCHOR_TYPE || type == HitTestResult.SRC_ANCHOR_TYPE);
 
 		// Anchors get a context-menu with "Share URL" and "Copy URL"
@@ -571,10 +625,15 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		// Images get a context-menu with "Show caption" which displays the content of the title- or alt-attribute
 		if (image) {
-			mSelectedAltText = getAltTextForImageUrl(result.getExtra());
+			mSelectedMediaUrl = result.getExtra();
+			mSelectedAltText = getAltTextForImageUrl(mSelectedMediaUrl);
 			if (mSelectedAltText != null)
 				menu.add(ContextMenu.NONE, CONTEXT_MENU_DISPLAY_CAPTION, 1, getResources().getString(R.string.ArticleActivity_ShowCaption));
 		}
+		if (video)
+			mSelectedMediaUrl = result.getExtra();
+		if (mSelectedMediaUrl != null)
+			menu.add(ContextMenu.NONE, CONTEXT_MENU_SAVE_IMAGE, 5, getResources().getString(R.string.ArticleActivity_SaveImage));
 		menu.add(ContextMenu.NONE, CONTEXT_MENU_SHARE_ARTICLE, 10, getResources().getString(R.string.ArticleActivity_ShareArticle));
 		menu.add(ContextMenu.NONE, CONTEXT_MENU_COPY_CONTENT, 4, getResources().getString(R.string.ArticleActivity_CopyContent));
 	}
@@ -789,6 +848,12 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 					fragment.show(getActivity().getSupportFragmentManager(), ImageCaptionDialog.DIALOG_CAPTION);
 				}
 				return true;
+			case CONTEXT_MENU_SAVE_IMAGE:
+				if (mSelectedMediaUrl != null && articleWebViewClient != null) {
+					articleWebViewClient.saveMediaToPictures(mSelectedMediaUrl);
+					return true;
+				}
+				break;
 			case CONTEXT_MENU_SHARE_ARTICLE:
 				// default behavior is to share the article URL
 				shareIntent = getUrlShareIntent(article.url);
@@ -948,6 +1013,85 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		return html;
 	}
 
+	private boolean isThirdTap(MotionEvent event) {
+		if (!Controller.getInstance().saveImageOnTripleTap() || pendingDoubleTapStar == null || completedTapCount < 2)
+			return false;
+
+		long elapsed = event.getEventTime() - lastTapUpTime;
+		float deltaX = event.getX() - lastTapX;
+		float deltaY = event.getY() - lastTapY;
+		int slop = ViewConfiguration.get(requireContext()).getScaledDoubleTapSlop();
+		return elapsed <= ViewConfiguration.getDoubleTapTimeout() && deltaX * deltaX + deltaY * deltaY <= slop * slop;
+	}
+
+	private void recordTapUp(MotionEvent event, boolean moved) {
+		if (!Controller.getInstance().saveImageOnTripleTap())
+			return;
+		if (moved) {
+			completedTapCount = 0;
+			return;
+		}
+
+		long elapsed = event.getEventTime() - lastTapUpTime;
+		float deltaX = event.getX() - lastTapX;
+		float deltaY = event.getY() - lastTapY;
+		int slop = ViewConfiguration.get(requireContext()).getScaledDoubleTapSlop();
+		boolean consecutiveTap = completedTapCount > 0
+				&& elapsed <= ViewConfiguration.getDoubleTapTimeout()
+				&& deltaX * deltaX + deltaY * deltaY <= slop * slop;
+
+		completedTapCount = consecutiveTap ? completedTapCount + 1 : 1;
+		lastTapUpTime = event.getEventTime();
+		lastTapX = event.getX();
+		lastTapY = event.getY();
+
+		if (completedTapCount == 2 && pendingDoubleTapStar != null) {
+			gestureHandler.removeCallbacks(pendingDoubleTapStar);
+			gestureHandler.postDelayed(pendingDoubleTapStar, ViewConfiguration.getDoubleTapTimeout());
+		}
+	}
+
+	private void cancelPendingDoubleTapStar() {
+		if (pendingDoubleTapStar != null) {
+			gestureHandler.removeCallbacks(pendingDoubleTapStar);
+			pendingDoubleTapStar = null;
+		}
+	}
+
+	private void saveMediaAt(float x, float y) {
+		if (webView == null || articleWebViewClient == null) {
+			toggleArticleStarred();
+			return;
+		}
+
+		float scale = webView.getScale();
+		float cssX = (x + webView.getScrollX()) / scale;
+		float cssY = (y + webView.getScrollY()) / scale;
+		String script = "(function(){var e=document.elementFromPoint(" + cssX + "," + cssY + ");"
+				+ "while(e){var t=(e.tagName||'').toLowerCase();"
+				+ "if(t==='img')return e.currentSrc||e.src||'';"
+				+ "if(t==='video'){var s=e.querySelector('source');return e.currentSrc||e.src||(s&&s.src)||e.poster||'';}"
+				+ "e=e.parentElement;}return '';})()";
+		try {
+			webView.evaluateJavascript(script, value -> {
+				try {
+					String url = new JSONArray("[" + value + "]").optString(0, "");
+					if (!url.isEmpty() && !"null".equals(url)) {
+						articleWebViewClient.saveMediaToPictures(url);
+					} else {
+						toggleArticleStarred();
+					}
+				} catch (JSONException e) {
+					Log.e(TAG, "Could not identify the media under the triple-tap", e);
+					toggleArticleStarred();
+				}
+			});
+		} catch (RuntimeException e) {
+			Log.e(TAG, "Could not inspect the media under the triple-tap", e);
+			toggleArticleStarred();
+		}
+	}
+
 	private class ArticleGestureListener extends SwipeGestureListener {
 		private ArticleGestureListener(ActionBar actionBar, boolean hideActionbar, Activity activity) {
 			super(actionBar, hideActionbar, activity);
@@ -955,7 +1099,18 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		@Override
 		public boolean onDoubleTap(@NonNull MotionEvent event) {
-			toggleArticleStarred();
+			if (!Controller.getInstance().saveImageOnTripleTap()) {
+				toggleArticleStarred();
+				return true;
+			}
+
+			cancelPendingDoubleTapStar();
+			pendingDoubleTapStar = () -> {
+				pendingDoubleTapStar = null;
+				completedTapCount = 0;
+				toggleArticleStarred();
+			};
+			gestureHandler.postDelayed(pendingDoubleTapStar, ViewConfiguration.getDoubleTapTimeout());
 			return true;
 		}
 

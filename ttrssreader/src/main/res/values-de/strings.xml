@@ -52,6 +52,7 @@ not, see http://www.gnu.org/licenses/.
     <string name="ArticleActivity_ShareArticle">Artikel teilen</string>
     <string name="ArticleActivity_ShowCaption">Bildbeschriftung anzeigen</string>
     <string name="ArticleActivity_SaveImage">Bild speichern</string>
+    <string name="ArticleActivity_SaveMedia">Medium speichern</string>
     <string name="SaveImageOnTripleTapTitle">Bild mit Dreifachtipp speichern</string>
     <string name="SaveImageOnTripleTapSummary">Speichert ein Bild bei dreimaligem Tippen unter Pictures/tt-rss. Doppeltippen markiert weiterhin den Artikel.</string>
     <string name="SubscribeActivity_offline">Arbeite offline, Server kann nicht kontaktiert werden.</string>

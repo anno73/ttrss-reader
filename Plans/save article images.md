@@ -15,5 +15,5 @@
 ## Validation
 
 - Source diagnostics and resource/manifest checks: pending.
-- Android compile and CI unit tests: pending GitHub Actions run on `feature/save-article-images`.
+- The first GitHub Actions compile found that `WebView.HitTestResult` has no video-specific type constant. Video links now use their file extensions for context-menu detection; the retry is pending.
 - Device interaction test: pending.

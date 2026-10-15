@@ -97,6 +97,7 @@ import org.ttrssreader.utils.FileUtils;
 
 import java.lang.ref.WeakReference;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -613,7 +614,6 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		int type = result.getType();
 		boolean image = (type == HitTestResult.SRC_IMAGE_ANCHOR_TYPE || type == HitTestResult.IMAGE_TYPE);
-		boolean video = type == HitTestResult.SRC_VIDEO_ANCHOR_TYPE;
 		boolean anchor = (type == HitTestResult.SRC_IMAGE_ANCHOR_TYPE || type == HitTestResult.SRC_ANCHOR_TYPE);
 
 		// Anchors get a context-menu with "Share URL" and "Copy URL"
@@ -630,12 +630,20 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			if (mSelectedAltText != null)
 				menu.add(ContextMenu.NONE, CONTEXT_MENU_DISPLAY_CAPTION, 1, getResources().getString(R.string.ArticleActivity_ShowCaption));
 		}
-		if (video)
+		if (!image && anchor && isVideoUrl(result.getExtra()))
 			mSelectedMediaUrl = result.getExtra();
 		if (mSelectedMediaUrl != null)
-			menu.add(ContextMenu.NONE, CONTEXT_MENU_SAVE_IMAGE, 5, getResources().getString(R.string.ArticleActivity_SaveImage));
+			menu.add(ContextMenu.NONE, CONTEXT_MENU_SAVE_IMAGE, 5, getResources().getString(
+					image ? R.string.ArticleActivity_SaveImage : R.string.ArticleActivity_SaveMedia));
 		menu.add(ContextMenu.NONE, CONTEXT_MENU_SHARE_ARTICLE, 10, getResources().getString(R.string.ArticleActivity_ShareArticle));
 		menu.add(ContextMenu.NONE, CONTEXT_MENU_COPY_CONTENT, 4, getResources().getString(R.string.ArticleActivity_CopyContent));
+	}
+
+	private boolean isVideoUrl(String url) {
+		if (url == null)
+			return false;
+		String path = Uri.parse(url).getLastPathSegment();
+		return path != null && FileUtils.VIDEO_MIME.equals(FileUtils.getMimeType(path.toLowerCase(Locale.ROOT)));
 	}
 
 	public void onPrepareOptionsMenu(@NonNull Menu menu) {

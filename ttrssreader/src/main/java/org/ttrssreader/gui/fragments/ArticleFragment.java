@@ -27,6 +27,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -94,7 +95,9 @@ import org.ttrssreader.preferences.Constants;
 import org.ttrssreader.utils.AsyncTask;
 import org.ttrssreader.utils.DateUtils;
 import org.ttrssreader.utils.FileUtils;
+import org.ttrssreader.utils.MediaSaveFolder;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Locale;
@@ -119,6 +122,9 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	private static final String ARTICLE_FEED_ID = "ARTICLE_FEED_ID";
 
 	private static final String ARTICLE_MOVE = "ARTICLE_MOVE";
+	private static final String PENDING_MEDIA_URL = "PENDING_MEDIA_URL";
+	private static final String MEDIA_FOLDER_PICKER_OPEN = "MEDIA_FOLDER_PICKER_OPEN";
+	private static final int REQUEST_MEDIA_FOLDER = 14;
 	private static final int CONTEXT_MENU_SHARE_URL = 1000;
 	private static final int CONTEXT_MENU_SHARE_ARTICLE = 1001;
 	private static final int CONTEXT_MENU_DISPLAY_CAPTION = 1002;
@@ -150,6 +156,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	private String mSelectedExtra;
 	private String mSelectedAltText;
 	private String mSelectedMediaUrl;
+	private String pendingMediaUrl;
+	private boolean mediaFolderPickerOpen;
 
 	private ArticleJSInterface articleJSInterface;
 	private ArticleWebViewClient articleWebViewClient;
@@ -187,6 +195,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	@Override
 	public void onCreate(Bundle instance) {
 		if (instance != null) {
+			pendingMediaUrl = instance.getString(PENDING_MEDIA_URL);
+			mediaFolderPickerOpen = instance.getBoolean(MEDIA_FOLDER_PICKER_OPEN);
 			articleId = instance.getInt(ARTICLE_ID);
 			feedId = instance.getInt(ARTICLE_FEED_ID);
 			categoryId = instance.getInt(FeedHeadlineListFragment.FEED_CAT_ID);
@@ -205,6 +215,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 		initData();
 		initUI();
+		resumePendingMediaSave();
 	}
 
 	@Override
@@ -221,6 +232,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 	@Override
 	public void onSaveInstanceState(Bundle instance) {
+		instance.putString(PENDING_MEDIA_URL, pendingMediaUrl);
+		instance.putBoolean(MEDIA_FOLDER_PICKER_OPEN, mediaFolderPickerOpen);
 		instance.putInt(ARTICLE_ID, articleId);
 		instance.putInt(ARTICLE_FEED_ID, feedId);
 		instance.putInt(FeedHeadlineListFragment.FEED_CAT_ID, categoryId);
@@ -229,6 +242,69 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		if (webView != null)
 			webView.saveState(instance);
 		super.onSaveInstanceState(instance);
+	}
+
+	private void saveMedia(String url) {
+		if (mediaFolderPickerOpen) {
+			Toast.makeText(requireContext(), R.string.MediaSaveFolderChooseFirst, Toast.LENGTH_LONG).show();
+			return;
+		}
+		pendingMediaUrl = url;
+		resumePendingMediaSave();
+	}
+
+	private void resumePendingMediaSave() {
+		if (pendingMediaUrl == null || mediaFolderPickerOpen || articleWebViewClient == null)
+			return;
+		Uri folder = MediaSaveFolder.selectedUri();
+		if (folder != null) {
+			try {
+				MediaSaveFolder.requireWritableFolder(requireContext(), folder);
+			} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
+					 | SQLiteException | UnsupportedOperationException e) {
+				Log.w(TAG, "Saved media folder is inaccessible", e);
+				Toast.makeText(requireContext(), getString(R.string.MediaSaveFolderUnavailable, e.getMessage()),
+						Toast.LENGTH_LONG).show();
+				folder = null;
+			}
+		}
+		if (folder == null) {
+			try {
+				mediaFolderPickerOpen = true;
+				startActivityForResult(MediaSaveFolder.pickerIntent(), REQUEST_MEDIA_FOLDER);
+			} catch (ActivityNotFoundException | IllegalArgumentException e) {
+				mediaFolderPickerOpen = false;
+				pendingMediaUrl = null;
+				Log.e(TAG, "Could not open media folder picker", e);
+				Toast.makeText(requireContext(), R.string.MediaSaveFolderPickerUnavailable, Toast.LENGTH_LONG).show();
+			}
+			return;
+		}
+		String url = pendingMediaUrl;
+		pendingMediaUrl = null;
+		articleWebViewClient.saveMedia(url, folder);
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode != REQUEST_MEDIA_FOLDER)
+			return;
+		mediaFolderPickerOpen = false;
+		if (resultCode != Activity.RESULT_OK) {
+			pendingMediaUrl = null;
+			return;
+		}
+		try {
+			MediaSaveFolder.rememberSelection(requireContext(), data);
+			resumePendingMediaSave();
+		} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
+				 | SQLiteException | UnsupportedOperationException e) {
+			pendingMediaUrl = null;
+			Log.e(TAG, "Could not remember selected media folder", e);
+			Toast.makeText(requireContext(), getString(R.string.MediaSaveFolderSelectionFailed, e.getMessage()),
+					Toast.LENGTH_LONG).show();
+		}
 	}
 
 	/*
@@ -862,7 +938,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 				return true;
 			case CONTEXT_MENU_SAVE_IMAGE:
 				if (mSelectedMediaUrl != null && articleWebViewClient != null) {
-					articleWebViewClient.saveMediaToPictures(mSelectedMediaUrl);
+					saveMedia(mSelectedMediaUrl);
 					return true;
 				}
 				break;
@@ -1089,7 +1165,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 				try {
 					String url = new JSONArray("[" + value + "]").optString(0, "");
 					if (!url.isEmpty() && !"null".equals(url)) {
-						articleWebViewClient.saveMediaToPictures(url);
+						saveMedia(url);
 					} else {
 						toggleArticleStarred();
 					}

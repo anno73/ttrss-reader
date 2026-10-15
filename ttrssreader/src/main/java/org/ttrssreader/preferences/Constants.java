@@ -83,6 +83,7 @@ public class Constants {
 	public static final String HIDE_FEED_READ_BUTTONS = "HideFeedReadButtons";
 	public static final String SWIPE_ARTICLE_MARK_READ = "SwipeArticleMarkRead";
 	public static final String SAVE_IMAGE_ON_TRIPLE_TAP = "SaveImageOnTripleTap";
+	public static final String MEDIA_SAVE_FOLDER = "MediaSaveFolder";
 	// Usage Default Values
 	public static final boolean OPEN_URL_EMPTY_ARTICLE_DEFAULT = false;
 	public static final boolean USE_VOLUME_KEYS_DEFAULT = false;

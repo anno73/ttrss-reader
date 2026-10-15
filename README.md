@@ -63,6 +63,26 @@ GitHub. Download `ttrss-reader-debug` from the successful run's **Artifacts**,
 extract it, and install the desired flavor's APK. Both flavors share an app ID;
 installing one replaces the other, rather than installing a second app.
 
+## Installing alongside the original reader
+
+This fork can be installed alongside the original TT-RSS Reader. It uses app ID
+`org.ttrssreader.anno73` and internal list-provider authority
+`org.ttrssreader.anno73.listprovider`; each app keeps its own settings and data.
+
+Earlier fork APKs retained the original reader's `org.ttrssreader` provider
+authority. Android requires provider authorities to be unique, even for providers
+that are not exported. If the original reader is installed, those APKs can fail
+with "App not installed" (`INSTALL_FAILED_CONFLICTING_PROVIDER` in installer
+diagnostics), even after selecting "Install anyway". Use a corrected build;
+uninstalling the original reader is not required.
+
+This is separate from signing-key mismatches when updating an existing fork
+installation. The provider fix does not change the fork's app ID or signing key;
+an existing fork installation can still be updated without clearing data when
+the signer matches and the version code is not lower. If installation still
+fails, capture the Package Manager error using `adb install -r <apk>` or device
+installer logs rather than assuming that uninstalling an app is necessary.
+
 ## Migrating an existing installation
 
 An APK signed by an old ephemeral CI key cannot be updated with the new key.

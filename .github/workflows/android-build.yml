@@ -81,6 +81,55 @@ jobs:
           ORG_GRADLE_PROJECT_localePluginMavenPassword: ${{ secrets.LOCALE_PLUGIN_MAVEN_PASSWORD }}
         run: ./gradlew --no-daemon :ttrssreader:signingReport assembleDebug
 
+      - name: Verify APK package and provider identity
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          set -euo pipefail
+          aapt2="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          for flavor in fdroid play; do
+            apk="ttrssreader/build/outputs/apk/$flavor/debug/ttrssreader-$flavor-debug.apk"
+            badging=$("$aapt2" dump badging "$apk")
+            if ! grep -q "^package: name='org\.ttrssreader\.anno73' " <<< "$badging"; then
+              echo "::error::Unexpected package ID in $apk"
+              exit 1
+            fi
+            manifest=$("$aapt2" dump xmltree "$apk" --file AndroidManifest.xml)
+            grep -A 6 'E: provider' <<< "$manifest"
+            if grep -Eq 'android:authorities[^=]*="org\.ttrssreader"' <<< "$manifest" ||
+                grep -Fq '${applicationId}' <<< "$manifest"; then
+              echo "::error::Legacy authority or unresolved application ID in $apk"
+              exit 1
+            fi
+            if ! awk '
+              function check_provider() {
+                if (provider && name) {
+                  count++
+                  if (!authority) invalid = 1
+                }
+              }
+              /E: / {
+                check_provider()
+                provider = ($0 ~ /E: provider([ (]|$)/)
+                name = 0
+                authority = 0
+              }
+              provider && /A: (android|http:\/\/schemas.android.com\/apk\/res\/android):name/ {
+                name = ($0 ~ /="org\.ttrssreader\.model\.ListContentProvider"/)
+              }
+              provider && /A: (android|http:\/\/schemas.android.com\/apk\/res\/android):authorities/ {
+                authority = ($0 ~ /="org\.ttrssreader\.anno73\.listprovider"/)
+              }
+              END {
+                check_provider()
+                if (count != 1 || invalid) exit 1
+              }
+            ' <<< "$manifest"; then
+              echo "::error::Missing or incorrect list-provider declaration in $apk"
+              exit 1
+            fi
+            echo "$flavor APK package and list-provider authority verified"
+          done
+
       - name: Verify APK signing identity
         if: steps.signing.outputs.available == 'true'
         env:

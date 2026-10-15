@@ -19,4 +19,6 @@
 - GitHub Actions run `38658379476` passed the timeout-diagnostics unit tests, built both debug APK flavors, and verified their signing identity.
 - Downloaded the CI artifact to `downloaded-apk/run-38658379476/ttrss-reader-debug.zip` and extracted both APKs there.
 - User testing found saving did not create a visible file. Investigation found the legacy-storage permission callback was routed to `ArticleFragment`, while the `@AfterPermissionGranted` method was on `ArticleWebViewClient`; that annotation could not resume the pending save. The callback is now handled explicitly by the fragment and permission denial is reported.
-- Permission-flow fix build and device verification: pending.
+- Added visible saving/success/failure feedback and handling for known MediaStore runtime failures, so a failure will show a message instead of appearing to do nothing.
+- Permission-flow and diagnostics CI build: pending.
+- Device retest after installing the updated APK: pending.

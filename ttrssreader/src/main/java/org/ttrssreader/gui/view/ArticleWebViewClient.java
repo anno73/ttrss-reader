@@ -22,6 +22,7 @@ import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteException;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
@@ -34,6 +35,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import org.ttrssreader.MyApplication;
 import org.ttrssreader.R;
@@ -173,7 +175,12 @@ public class ArticleWebViewClient extends WebViewClient {
 			Log.w(TAG, "Cannot save media without a URL");
 			return;
 		}
+		if (context == null) {
+			Log.e(TAG, "Cannot save media without a context");
+			return;
+		}
 
+		Utils.showBackgroundToast(context, context.getString(R.string.ArticleActivity_SavingMedia), Toast.LENGTH_SHORT);
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
 			urlDownload = url;
 			saveToPictures = true;
@@ -374,6 +381,7 @@ public class ArticleWebViewClient extends WebViewClient {
 			if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
 				String message = "External storage is unavailable; media was not saved.";
 				Log.w(TAG, message);
+				Utils.showBackgroundToast(context, message, Toast.LENGTH_LONG);
 				Utils.showFinishedNotification(message, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
 				return null;
 			}
@@ -426,15 +434,20 @@ public class ArticleWebViewClient extends WebViewClient {
 
 				int seconds = (int) ((System.currentTimeMillis() - start) / Utils.SECOND);
 				String savedName = savedFile == null ? fileName : savedFile.getName();
+				Utils.showBackgroundToast(context,
+						context.getString(R.string.ArticleActivity_MediaSaved, savedName), Toast.LENGTH_LONG);
 				Utils.showFinishedNotification("Saved to Pictures/tt-rss/" + savedName, seconds, false, context,
 						Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
-			} catch (IOException | SecurityException e) {
+			} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
+					 | SQLiteException | UnsupportedOperationException e) {
 				if (savedUri != null && context.getContentResolver().delete(savedUri, null, null) == 0)
 					Log.w(TAG, "Could not remove incomplete media-store entry for " + fileName);
 				if (savedFile != null && !savedFile.delete())
 					Log.w(TAG, "Could not remove incomplete saved file: " + savedFile.getAbsolutePath());
 				String message = "Could not save media " + (fileName == null ? "" : fileName + ": ") + e.getMessage();
 				Log.e(TAG, message, e);
+				Utils.showBackgroundToast(context,
+						context.getString(R.string.ArticleActivity_MediaSaveFailed, e.getMessage()), Toast.LENGTH_LONG);
 				Utils.showFinishedNotification(message, 0, true, context, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);
 			} finally {
 				Utils.showRunningNotification(context, true, Data.NOTIFICATION_CHANNEL_ID_MEDIADOWNLOAD);

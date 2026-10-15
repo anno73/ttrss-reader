@@ -70,6 +70,9 @@
     <string name="ArticleActivity_ShowCaption">Show image-caption</string>
     <string name="ArticleActivity_SaveImage">Save image</string>
     <string name="ArticleActivity_SaveMedia">Save media</string>
+    <string name="ArticleActivity_SavingMedia">Saving media…</string>
+    <string name="ArticleActivity_MediaSaved">Saved to Pictures/tt-rss/%1$s</string>
+    <string name="ArticleActivity_MediaSaveFailed">Could not save media: %1$s</string>
     <string name="SaveImageOnTripleTapTitle">Save image on triple-tap</string>
     <string name="SaveImageOnTripleTapSummary">Save an image to Pictures/tt-rss when triple-tapped. Double-tap continues to toggle the article star.</string>
     <string name="SubscribeActivity_noClip">Couldn\'t paste clipboard data.</string>

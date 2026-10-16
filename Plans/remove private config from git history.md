@@ -41,8 +41,9 @@
   run directory. Each retains `ttrss-reader-debug.zip` and both
   `ttrssreader/build/outputs/apk/{fdroid,play}/debug/` APK paths.
 - The final plan-only commit skips CI; executable files are unchanged from the
-  successful runs. Manual testing and merge approval remain pending; nothing
-  was merged into `master`.
+  successful runs. The user confirmed manual verification passed, including
+  continued local backend config operation. Merge approval remains pending;
+  nothing was merged into `master`.
 - The project virtual environment created during tooling setup was removed.
   Python tooling for the cleanup runs through `uvx`.
 - Rewriting Git refs cannot remove copies in other clones, forks, GitHub cached

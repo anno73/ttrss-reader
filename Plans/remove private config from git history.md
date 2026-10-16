@@ -19,7 +19,30 @@
 
 ## Validation and limitations
 
-- Pending final repository, remote and CI checks.
+- PASS: `git log --all -- ttrss.config.json` and
+  `git rev-list --objects --all -- ttrss.config.json` return no entries.
+  The index does not track the file, ignore checks pass on both affected
+  branches, and its local SHA-256 matches the pre-cleanup copy.
+- PASS: Git connectivity check. The temporary private backup was removed after
+  integrity verification; the original local config remains intact.
+- PASS: `feat/ttrss-backend-skill` was force-pushed with an exact old-tip lease;
+  its final tip is `1de954897e7ed1b472076bd18f198e9f7fa84a42`.
+  Every other previously published branch, including `master`, retained its
+  original tip. Setup documentation changes were committed on the feature
+  branch; ignore protection and this plan are on the task branch.
+- PASS: Android CI
+  [38930133368](https://github.com/anno73/ttrss-reader/actions/runs/38930133368)
+  on the task branch and
+  [38930210612](https://github.com/anno73/ttrss-reader/actions/runs/38930210612)
+  on the cleaned feature branch. No local compilation or tests were run.
+- PASS: Both runs' ZIP archives were downloaded to
+  `downloaded-apk/run-38930133368/` and `downloaded-apk/run-38930210612/`,
+  verified against GitHub's SHA-256 digests, and extracted directly into each
+  run directory. Each retains `ttrss-reader-debug.zip` and both
+  `ttrssreader/build/outputs/apk/{fdroid,play}/debug/` APK paths.
+- The final plan-only commit skips CI; executable files are unchanged from the
+  successful runs. Manual testing and merge approval remain pending; nothing
+  was merged into `master`.
 - The project virtual environment created during tooling setup was removed.
   Python tooling for the cleanup runs through `uvx`.
 - Rewriting Git refs cannot remove copies in other clones, forks, GitHub cached

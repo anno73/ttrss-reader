@@ -194,12 +194,6 @@ Please follow this [link](https://github.com/nilsbraden/ttrss-reader-fork/wiki/C
 # Contact
 Please feel free to contact me via E-Mail (ttrss /at/ nilsbraden.de) or via the Bugtracker (Issues). If you have questions specifically about Tiny Tiny RSS you may ask me or visit the [Tiny-Tiny-RSS-Forum](http://tt-rss.org/forum/) or #tt-rss at irc.tt-rss.org. If I don't answer fast enough or am not willing to implement your suggestion please keep in mind that this is only a hobby for me and I'm unwilling to implement every little feature just beacuse you suggested I do so. You may implement it and send me pull-requests so I can include the features but I can't guarantee I will do this for every thing you want to have.
 
-# Donations
-If you would like to support my work and the further developement of TTRSS-reader you may submit a donation via Paypal here:
- * Paypal: [![paypal.com][1]][2]<br><br>
-
-For more information you may want to visit [Donations](https://github.com/nilsbraden/ttrss-reader-fork/wiki/Donations).
-
 # Screenshots
 ![Screenshot 1](http://nilsbraden.de/android/screenshots/small/device-2014-01-02-163718_1.png)
 ![Screenshot 2](http://nilsbraden.de/android/screenshots/small/device-2014-01-02-163709_1.png)
@@ -211,8 +205,6 @@ For more information you may want to visit [Donations](https://github.com/nilsbr
 ![Screenshot 8](http://nilsbraden.de/android/screenshots/small/Screenshot_2014-01-02-16-35-11_1.png)
 ![Screenshot 9](http://nilsbraden.de/android/screenshots/small/Screenshot_2014-01-02-16-35-30_1.png)
 
-[1]: https://nilsbraden.de/android/tt-rss/btn_donateCC_LG.gif
-[2]: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=SD4AN4APNW6B4
 [3]: https://www.nilsbraden.de/android/tt-rss/google-play-badge.png
 [4]: https://play.google.com/store/apps/details?id=org.ttrssreader
 [5]: https://www.nilsbraden.de/android/tt-rss/qrcode.png

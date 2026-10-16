@@ -18,6 +18,7 @@
 package org.ttrssreader.net;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
 import com.google.gson.JsonObject;
@@ -31,6 +32,7 @@ import org.ttrssreader.MyApplication;
 import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
 import org.ttrssreader.controllers.Data;
+import org.ttrssreader.controllers.DBHelper;
 import org.ttrssreader.model.pojos.Article;
 import org.ttrssreader.model.pojos.Category;
 import org.ttrssreader.model.pojos.Feed;
@@ -268,6 +270,16 @@ public class JSONConnector {
 		return null;
 	}
 
+	private Feed getRequestFeed(int feedId) {
+		try {
+			Feed feed = DBHelper.getInstance().getFeed(feedId);
+			return feed != null && feed.id == feedId ? feed : null;
+		} catch (SQLiteException e) {
+			Log.w(TAG, "Could not resolve feed details for API timeout diagnostics", e);
+			return null;
+		}
+	}
+
 	private Proxy getProxy() {
 		if (Controller.getInstance().useProxy()) {
 			String host = Controller.getInstance().proxyHost();
@@ -284,6 +296,12 @@ public class JSONConnector {
 	}
 
 	private void reportTimeout(RequestDiagnostics diagnostics, IOException exception) {
+		Integer feedId = diagnostics.feedId();
+		if (feedId != null) {
+			Feed feed = getRequestFeed(feedId);
+			if (feed != null)
+				diagnostics = diagnostics.withFeed(feed.title, feed.url);
+		}
 		hasLastError = true;
 		lastErrorIsTimeout = true;
 		lastError = diagnostics.message(exception);

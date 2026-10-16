@@ -38,10 +38,18 @@ final class RequestDiagnostics {
 			Comparator.comparingInt(String::length).reversed().thenComparing(Comparator.naturalOrder()));
 	private final String url;
 	private final String json;
+	private final Integer feedId;
+	private final String feedName;
+	private final String feedUrl;
 
 	RequestDiagnostics(HttpUrl requestUrl, String requestJson) {
+		this(requestUrl, requestJson, null, null);
+	}
+
+	RequestDiagnostics(HttpUrl requestUrl, String requestJson, String requestFeedName, String requestFeedUrl) {
 		url = sanitizeUrl(requestUrl);
 		JsonObject body = JsonParser.parseString(requestJson).getAsJsonObject();
+		feedId = feedId(body);
 		for (Map.Entry<String, JsonElement> entry : body.entrySet()) {
 			String name = entry.getKey();
 			if (isCredential(name)) {
@@ -57,16 +65,38 @@ final class RequestDiagnostics {
 			}
 		}
 		json = body.toString();
+		feedName = requestFeedName;
+		feedUrl = sanitizeUrl(requestFeedUrl);
 	}
 
 	private RequestDiagnostics(RequestDiagnostics original, HttpUrl responseUrl) {
 		secrets.addAll(original.secrets);
 		url = sanitizeUrl(responseUrl);
 		json = original.json;
+		feedId = original.feedId;
+		feedName = original.feedName;
+		feedUrl = original.feedUrl;
+	}
+
+	private RequestDiagnostics(RequestDiagnostics original, String requestFeedName, String requestFeedUrl) {
+		secrets.addAll(original.secrets);
+		url = original.url;
+		json = original.json;
+		feedId = original.feedId;
+		feedName = requestFeedName;
+		feedUrl = sanitizeUrl(requestFeedUrl);
 	}
 
 	RequestDiagnostics withUrl(HttpUrl responseUrl) {
 		return new RequestDiagnostics(this, responseUrl);
+	}
+
+	RequestDiagnostics withFeed(String requestFeedName, String requestFeedUrl) {
+		return new RequestDiagnostics(this, requestFeedName, requestFeedUrl);
+	}
+
+	Integer feedId() {
+		return feedId;
 	}
 
 	String json() {
@@ -79,6 +109,24 @@ final class RequestDiagnostics {
 
 	private static boolean isCredential(String name) {
 		return CREDENTIAL_PARAMETERS.contains(name.toLowerCase(Locale.ROOT).replace('-', '_'));
+	}
+
+	private static Integer feedId(JsonObject body) {
+		String operation = body.has("op") && !body.get("op").isJsonNull()
+				? body.get("op").getAsString() : null;
+		boolean feedOperation = "updateFeed".equals(operation) || "unsubscribeFeed".equals(operation);
+		if ("getHeadlines".equals(operation) || "catchupFeed".equals(operation))
+			feedOperation = body.has("is_cat") && !body.get("is_cat").isJsonNull()
+					&& "0".equals(body.get("is_cat").getAsString());
+		if (!feedOperation || !body.has("feed_id") || body.get("feed_id").isJsonNull())
+			return null;
+
+		try {
+			int id = Integer.parseInt(body.get("feed_id").getAsString());
+			return id > 0 ? id : null;
+		} catch (NumberFormatException e) {
+			return null;
+		}
 	}
 
 	private String sanitizeUrl(HttpUrl original) {
@@ -117,6 +165,13 @@ final class RequestDiagnostics {
 		return builder.build().toString();
 	}
 
+	private String sanitizeUrl(String original) {
+		if (original == null)
+			return null;
+		HttpUrl parsed = HttpUrl.parse(original);
+		return parsed != null ? sanitizeUrl(parsed) : null;
+	}
+
 	private void remember(String value) {
 		if (value != null && !value.isEmpty()) {
 			secrets.add(value);
@@ -140,8 +195,13 @@ final class RequestDiagnostics {
 		String details = exception.getClass().getSimpleName() + ": " + exception.getMessage();
 		if (exception.getCause() != null)
 			details += " (Cause: " + exception.getCause() + ")";
-		return "Timeout in API request: " + sanitizeExceptionText(details)
-				+ "\nURL: " + url + "\nJSON: " + json;
+		String message = "Timeout in API request: " + sanitizeExceptionText(details)
+				+ "\nURL: " + url;
+		if (feedName != null && !feedName.isEmpty())
+			message += "\nFeed name: " + feedName;
+		if (feedUrl != null)
+			message += "\nFeed URL: " + feedUrl;
+		return message + "\nJSON: " + json;
 	}
 
 	String stackTrace(IOException exception) {

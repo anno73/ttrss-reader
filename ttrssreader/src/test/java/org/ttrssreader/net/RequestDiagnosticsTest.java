@@ -123,6 +123,35 @@ public class RequestDiagnosticsTest {
 	}
 
 	@Test
+	public void includesFeedNameAndSanitizesFeedUrlInTimeoutMessage() {
+		RequestDiagnostics diagnostics = new RequestDiagnostics(ENDPOINT, "{\"op\":\"getHeadlines\"}",
+				"Daily News", "https://feed-user:feed-pass@feeds.example.org/rss?token=feed-secret&format=xml");
+
+		String message = diagnostics.message(new SocketTimeoutException("feed-secret"));
+
+		assertTrue(message.contains("\nFeed name: Daily News"));
+		assertTrue(message.contains("\nFeed URL: https://VALUE_REDACTED:VALUE_REDACTED@feeds.example.org/rss"
+				+ "?token=VALUE_REDACTED&format=xml"));
+		assertFalse(message.contains("feed-user"));
+		assertFalse(message.contains("feed-pass"));
+		assertFalse(message.contains("feed-secret"));
+		assertTrue(message.contains("\nJSON: {\"op\":\"getHeadlines\"}"));
+	}
+
+	@Test
+	public void redirectedResponseRetainsFeedMetadata() {
+		RequestDiagnostics original = new RequestDiagnostics(ENDPOINT, "{\"op\":\"getHeadlines\"}",
+				"Daily News", "https://feeds.example.org/rss");
+
+		String message = original.withUrl(HttpUrl.get("https://redirect.example.org/api"))
+				.message(new SocketTimeoutException("timeout"));
+
+		assertTrue(message.contains("\nURL: https://redirect.example.org/api"));
+		assertTrue(message.contains("\nFeed name: Daily News"));
+		assertTrue(message.contains("\nFeed URL: https://feeds.example.org/rss"));
+	}
+
+	@Test
 	public void exceptionMessagesCausesAndStacksCannotReintroduceKnownSecrets() {
 		RequestDiagnostics diagnostics = new RequestDiagnostics(
 				HttpUrl.get("https://user-name:encoded%2Bsecret@example.org/api?token=query-secret"),

@@ -158,6 +158,11 @@ attachment downloads are not affected.
 # API timeout diagnostics
 Backend API timeout dialogs and logs include the called endpoint (`URL:`) and
 the JSON request body (`JSON:`), including timeouts while reading a response.
+For requests targeting a specific feed, diagnostics also show the locally stored
+feed name and subscribed source URL (`Feed name:` and `Feed URL:`); category
+requests are not attributed to a feed. Credentials and recognized token query
+parameters in the feed URL are redacted using the same rules as other diagnostic
+URLs.
 Credentials and authentication/session tokens are replaced with
 `VALUE_REDACTED`; the actual request is not modified. This includes login
 usernames/passwords, `sid`, embedded URL credentials, and known credential/token

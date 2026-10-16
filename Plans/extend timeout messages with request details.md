@@ -1,4 +1,4 @@
-# API timeout messages with request URLs
+# API timeout messages with request and feed details
 
 ## Problem and approach
 
@@ -7,6 +7,8 @@ Backend API timeout errors currently lack the called URL and request body. Exten
 Scope is backend API requests only. Image caching, feed icons, article resources, timeout durations, retries, and non-timeout errors remain unchanged.
 
 Preserve the exception details and existing dialog flow through `hasLastError` / `pullLastError`. Cover both execution timeouts and delayed response-body read timeouts; `doRequest()` currently returns a lazy Reader, so changing only its catch block would miss the latter.
+
+For timeout requests that target a specific feed, also identify the feed by its locally stored name and source URL. Resolve the `feed_id` from the captured request body against the existing local feed record (`DBHelper.getFeed(id)`); do not issue another API request or depend on mutable global request state. Only attach feed metadata when the operation targets an actual feed (not a category) and a matching feed record is available. If it is unavailable, retain the timeout details without feed metadata. Sanitize credentials and known token query values in the stored feed URL with the same URL sanitizer used for request diagnostics.
 
 ## API-reference verification
 
@@ -28,6 +30,7 @@ Source: [current official Tiny Tiny RSS API reference](https://tt-rss.org/docs/A
 - Use OkHttp URL parsing/building to safely encode the diagnostic URL. Never change the URL or JSON sent to the server. Never emit authorization headers or HTTP Basic-auth credentials.
 - Report the API request endpoint URL, not the resolved socket/IP address. Preserve scheme, host, port, path, and non-sensitive parameters.
 - Include the sanitized JSON body in both the timeout dialog message and timeout diagnostic log, with clear `URL:` and `JSON:` labels. Redacted fields remain present with value `VALUE_REDACTED`; do not remove them.
+- For feed-targeting operations, include the resolved feed name and sanitized source URL in both the timeout dialog message and diagnostic log. The source URL is the subscribed feed URL, distinct from the API endpoint URL shown under `URL:`. Do not add feed metadata for category-targeting requests or when the feed is not in the local database.
 - For structured URL values in `feed_url` and `url`, retain the URL but replace embedded credentials and known credential/token query values using the same URL sanitizer. Do not redact the entire URL parameter.
 - Do not alter free-text fields or parse arbitrary secrets out of `search`, `data`, `title`, or `content`. These remain visible by explicit request. Absent fields remain absent; do not synthesize credentials or session fields.
 
@@ -61,8 +64,11 @@ The API reference defines authentication roles, not a privacy-redaction standard
 
 1. Implement request-scoped timeout context in `ttrssreader/src/main/java/org/ttrssreader/net/JSONConnector.java`.
    - Capture the built request URL and sanitized JSON body for execution failures, and the response request URL plus the original call's sanitized body for body-read failures. Keep original POST context even when the response followed a redirect.
+   - Extract `feed_id` from the captured request parameters for feed-targeting operations and resolve its title and source URL from the existing local feed record. Respect operation semantics such as `is_cat`, avoid lookup for category IDs, and pass the optional feed context into the timeout formatter without adding a network request.
+   - Keep feed metadata request-scoped alongside the endpoint URL and JSON so delayed body-read timeouts report the same feed that initiated the request.
    - Recognize typed network timeouts, including SocketTimeoutException and OkHttp timeout-style InterruptedIOException, without treating cancellation/interruption as a timeout.
    - Use one small shared formatter/redaction implementation for the user-visible message and log message; apply the per-call policy above.
+   - Apply the existing URL credential/token redaction to the resolved feed URL before including it in either message or log.
    - Sanitize a diagnostic copy of the JSON, not the live payload. Replace the existing remove/log/restore behavior in `logRequest()` with copy-based credential/session redaction so ordinary request logs cannot expose the login username and cannot mutate the payload.
    - Add a narrowly scoped Reader wrapper for timeout reporting during lazy reads. Preserve the original exception type/cause, delegate close correctly, and avoid shared mutable "last request URL" state.
    - Record timeout errors in the existing connector error state and log the same redacted message with the exception.
@@ -75,11 +81,13 @@ The API reference defines authentication roles, not a privacy-redaction standard
    - Cover nested credential/token components in `feed_url` and `url`, optional subscription credentials, and unchanged free-text search/note/title/content fields.
    - Verify `op: "login"` is retained and sanitization leaves the original body untouched, including credentials and optional fields.
    - Verify ordinary query values and API path are retained, original request URLs are not mutated, and messages retain exception details.
+   - Verify feed-targeting timeout messages contain the matching local feed name and source URL, including delayed reads; category-targeting operations, missing feed records, and non-feed operations must not show incorrect feed metadata.
+   - Verify credentials and known token query parameters in the resolved feed URL are redacted while its remaining URL and the feed name remain visible.
    - Verify execution and delayed-read timeouts carry their captured URL, including after settings changes; non-timeout failures and cancellation remain unchanged.
    - Verify timeout state survives the no-answer workaround and reaches the existing error consumers.
-3. Update directly related documentation in README.md with the API timeout URL/body diagnostic behavior, the retained free-text fields, and credential/session redaction limits.
+3. Update directly related documentation in README.md with the API endpoint and feed details shown for timeouts, the retained free-text fields, and credential/session redaction limits.
 4. Validate the change.
-   - Run focused JVM tests and the fdroid debug compilation/resource build with the existing Gradle wrapper.
+   - Run focused JVM tests and the fdroid debug compilation/resource build through the existing GitHub Actions Android CI workflow; do not build Android APKs locally.
    - Check editor diagnostics and the final diff for unrelated changes.
    - If an Android device/emulator is available, reproduce an API response delay and confirm the dialog and log contain the same redacted endpoint and JSON body. Check long-body usability and whether Logcat splits/truncates long entries; do not silently truncate or omit required fields. Otherwise explicitly report that on-device verification was unavailable.
 
@@ -92,3 +100,15 @@ The API reference defines authentication roles, not a privacy-redaction standard
 - Timeout diagnostics intentionally include potentially personal search text, article notes, titles, content, and ordinary URL values. Users should review these before sharing reports.
 - Preserve original exception details, but ensure newly formatted diagnostic text does not reintroduce raw credential/session values via exception messages or causes. Keep exception type/stack context without emitting unsanitized request data.
 - Do not perform unrelated parser, networking, or resource-lifecycle refactors.
+
+## Follow-up implementation and validation
+
+- [x] Capture the feed ID from the immutable request diagnostic body only for feed-specific operations; do not infer feed metadata for category requests.
+- [x] Resolve a matching local feed record only when a timeout occurs, then carry its name and sanitized source URL through execution and delayed-read diagnostics.
+- [x] Include feed metadata in the same formatted message used by the existing dialog and error log.
+- [x] Add regression tests for feed operations, categories, missing records, URL credential/token redaction, and delayed response-body timeouts.
+- [x] Document the feed name/source URL diagnostics and redaction in README.md.
+- [x] Check editor diagnostics and `git diff --check` (using the repository's CRLF-aware whitespace setting).
+- [ ] Run the focused tests and F-Droid debug build through GitHub Actions; no local build will be run.
+
+Local validation limitation: the focused Gradle test task could not run because this machine has no Android SDK (`SDK location not found`). The initial attempt also exposed absent private Maven credentials. Use the repository's GitHub Actions Android CI, which is configured with the required build environment and secrets.

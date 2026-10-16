@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.ttrssreader.controllers.Controller;
+import org.ttrssreader.controllers.DBHelper;
+import org.ttrssreader.model.pojos.Feed;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -85,28 +87,95 @@ public class JSONConnectorTimeoutTest {
 
 	@Test
 	public void bodyReadTimeoutUsesCapturedEndpointAndSurvivesNoAnswerWorkaround() throws Exception {
-		Response response = response(new Reader() {
-			@Override
-			public int read(char[] buffer, int offset, int length) throws IOException {
-				when(controller.hostname()).thenReturn("https://changed.example.org/api/");
-				throw new SocketTimeoutException("session-secret endpoint-secret");
+		try (MockedStatic<DBHelper> dbHelperStatic = mockStatic(DBHelper.class)) {
+			DBHelper dbHelper = mock(DBHelper.class);
+			Feed feed = new Feed();
+			feed.id = 12;
+			feed.title = "Daily News";
+			feed.url = "https://feed-user:feed-pass@feeds.example.org/rss?token=feed-secret&format=xml";
+			dbHelperStatic.when(DBHelper::getInstance).thenReturn(dbHelper);
+			when(dbHelper.getFeed(12)).thenReturn(feed);
+
+			Response response = response(new Reader() {
+				@Override
+				public int read(char[] buffer, int offset, int length) throws IOException {
+					when(controller.hostname()).thenReturn("https://changed.example.org/api/");
+					throw new SocketTimeoutException("session-secret endpoint-secret feed-secret");
+				}
+				@Override
+				public void close() {
+				}
+			});
+			when(call.execute()).thenReturn(response);
+			Map<String, String> params = new HashMap<>();
+			params.put("op", "updateFeed");
+			params.put("feed_id", "12");
+			assertFalse(noAnswer(params));
+			assertTrue(connector.hasLastError());
+			String message = connector.pullLastError();
+			assertTrue(message.contains("URL: https://example.org/api/index.php?token=VALUE_REDACTED"));
+			assertTrue(message.contains("Feed name: Daily News"));
+			assertTrue(message.contains("Feed URL: https://VALUE_REDACTED:VALUE_REDACTED@feeds.example.org/rss"
+					+ "?token=VALUE_REDACTED&format=xml"));
+			assertFalse(message.contains("changed.example.org"));
+			assertFalse(message.contains("session-secret"));
+			assertFalse(message.contains("endpoint-secret"));
+			assertFalse(message.contains("feed-secret"));
+			assertLogged(message);
+		}
+	}
+
+	@Test
+	public void feedTimeoutsResolveLocalMetadataButCategoryRequestsDoNot() throws Exception {
+		try (MockedStatic<DBHelper> dbHelperStatic = mockStatic(DBHelper.class)) {
+			DBHelper dbHelper = mock(DBHelper.class);
+			Feed feed = new Feed();
+			feed.id = 12;
+			feed.title = "Daily News";
+			feed.url = "https://feeds.example.org/rss";
+			dbHelperStatic.when(DBHelper::getInstance).thenReturn(dbHelper);
+			when(dbHelper.getFeed(12)).thenReturn(feed);
+			when(call.execute()).thenThrow(new SocketTimeoutException("timeout"));
+
+			String[][] operations = {
+					{"updateFeed"},
+					{"getHeadlines", "0"},
+					{"catchupFeed", "0"},
+					{"unsubscribeFeed"}
+			};
+			for (String[] operation : operations) {
+				Map<String, String> params = new HashMap<>();
+				params.put("op", operation[0]);
+				params.put("feed_id", "12");
+				if (operation.length > 1)
+					params.put("is_cat", operation[1]);
+				assertFalse(noAnswer(params));
+				String message = connector.pullLastError();
+				assertTrue(operation[0], message.contains("Feed name: Daily News"));
+				assertTrue(operation[0], message.contains("Feed URL: https://feeds.example.org/rss"));
 			}
-			@Override
-			public void close() {
+
+			Map<String, String> categoryParams = new HashMap<>();
+			for (String operation : new String[]{"getHeadlines", "catchupFeed"}) {
+				categoryParams.put("op", operation);
+				categoryParams.put("feed_id", "12");
+				categoryParams.put("is_cat", "1");
+				assertFalse(noAnswer(categoryParams));
+				String categoryMessage = connector.pullLastError();
+				assertFalse(categoryMessage.contains("Feed name:"));
+				assertFalse(categoryMessage.contains("Feed URL:"));
 			}
-		});
-		when(call.execute()).thenReturn(response);
-		Map<String, String> params = new HashMap<>();
-		params.put("op", "updateFeed");
-		params.put("feed_id", "12");
-		assertFalse(noAnswer(params));
-		assertTrue(connector.hasLastError());
-		String message = connector.pullLastError();
-		assertTrue(message.contains("URL: https://example.org/api/index.php?token=VALUE_REDACTED"));
-		assertFalse(message.contains("changed.example.org"));
-		assertFalse(message.contains("session-secret"));
-		assertFalse(message.contains("endpoint-secret"));
-		assertLogged(message);
+			when(dbHelper.getFeed(99)).thenReturn(new Feed());
+			Map<String, String> missingFeedParams = new HashMap<>();
+			missingFeedParams.put("op", "getHeadlines");
+			missingFeedParams.put("feed_id", "99");
+			missingFeedParams.put("is_cat", "0");
+			assertFalse(noAnswer(missingFeedParams));
+			String missingFeedMessage = connector.pullLastError();
+			assertFalse(missingFeedMessage.contains("Feed name:"));
+			assertFalse(missingFeedMessage.contains("Feed URL:"));
+			verify(dbHelper, times(4)).getFeed(12);
+		}
 	}
 
 	@Test
@@ -116,6 +185,7 @@ public class JSONConnectorTimeoutTest {
 		assertTrue(connector.hasLastError());
 		String message = connector.pullLastError();
 		assertTrue(message.contains("\"pref_name\":\"DEFAULT_UPDATE_INTERVAL\""));
+		assertFalse(message.contains("Feed name:"));
 		assertLogged(message);
 		assertOriginalBody("getPref");
 	}

@@ -164,7 +164,7 @@ public class ArticleWebViewClient extends WebViewClient {
 		checkStoragePermission();
 	}
 
-	public void saveMedia(String url, Uri folder) {
+	public void saveMedia(String url, String filenameSourceUrl, Uri folder) {
 		if (url == null || url.isEmpty()) {
 			Log.w(TAG, "Cannot save media without a URL");
 			return;
@@ -176,7 +176,8 @@ public class ArticleWebViewClient extends WebViewClient {
 
 		Utils.showBackgroundToast(context, context.getString(R.string.ArticleActivity_SavingMedia), Toast.LENGTH_SHORT);
 		try {
-			new AsyncMediaSaver(context, folder).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new URL(url));
+			new AsyncMediaSaver(context, folder, filenameSourceUrl)
+					.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new URL(url));
 		} catch (MalformedURLException e) {
 			Log.e(TAG, "Invalid media URL: " + url, e);
 			Utils.showBackgroundToast(context,
@@ -340,10 +341,12 @@ public class ArticleWebViewClient extends WebViewClient {
 	private static class AsyncMediaSaver extends AsyncTask<URL, Void, Void> {
 		private final WeakReference<Context> contextRef;
 		private final Uri folder;
+		private final String filenameSourceUrl;
 
-		AsyncMediaSaver(Context context, Uri folder) {
+		AsyncMediaSaver(Context context, Uri folder, String filenameSourceUrl) {
 			contextRef = new WeakReference<>(context.getApplicationContext());
 			this.folder = folder;
+			this.filenameSourceUrl = filenameSourceUrl;
 		}
 
 		@Override
@@ -363,7 +366,8 @@ public class ArticleWebViewClient extends WebViewClient {
 				String savedName;
 				try (InputStream input = new BufferedInputStream(connection.getInputStream())) {
 					fileName = MediaSaveFolder.fileName(connection.getURL().toString(),
-							connection.getHeaderField("Content-Disposition"));
+							connection.getHeaderField("Content-Disposition"), filenameSourceUrl,
+							connection.getContentType());
 					String mimeType = MediaSaveFolder.mimeType(fileName, connection.getContentType());
 					savedName = MediaSaveFolder.write(context, folder, fileName, mimeType, input);
 				}

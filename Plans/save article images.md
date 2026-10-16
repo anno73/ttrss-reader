@@ -41,3 +41,5 @@
 - User reported that manual tests of the final folder-picker implementation passed. Requested checks included first-save selection and resumption, cancelling, persistence after restart, Settings changes/cancellation, revoked grants, duplicate names, JPG/PNG/GIF/WebM, and unchanged long-press/triple-tap/double-tap behavior.
 - Manual-test result is user-reported; no device testing was performed in this development environment.
 - Merged into master after successful feature CI, user-reported manual tests, and explicit user approval.
+- Filename regression follow-up: prefer the selected image's source URL, or a unique image URL from the same article's stored remote files, over TT-RSS's `public.php?op=cached` proxy URL. If the original name is unavailable or ambiguous, use a `yyyyMMdd-HHmmss` basename and the response-inferred media extension; existing duplicate-name handling remains in force.
+- Added regression coverage for original-source filenames, `Content-Disposition` filenames, and timestamp/extension fallback. Source diagnostics passed; GitHub Actions results will be recorded after the task branch is pushed.

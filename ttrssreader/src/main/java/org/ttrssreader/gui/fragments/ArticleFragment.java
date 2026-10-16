@@ -63,6 +63,7 @@ import org.htmlcleaner.HtmlNode;
 import org.htmlcleaner.TagNode;
 import org.htmlcleaner.TagNodeVisitor;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -100,6 +101,7 @@ import org.ttrssreader.utils.MediaSaveFolder;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -123,6 +125,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 
 	private static final String ARTICLE_MOVE = "ARTICLE_MOVE";
 	private static final String PENDING_MEDIA_URL = "PENDING_MEDIA_URL";
+	private static final String PENDING_MEDIA_FILENAME_URL = "PENDING_MEDIA_FILENAME_URL";
 	private static final String MEDIA_FOLDER_PICKER_OPEN = "MEDIA_FOLDER_PICKER_OPEN";
 	private static final int REQUEST_MEDIA_FOLDER = 14;
 	private static final int CONTEXT_MENU_SHARE_URL = 1000;
@@ -157,6 +160,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	private String mSelectedAltText;
 	private String mSelectedMediaUrl;
 	private String pendingMediaUrl;
+	private String pendingMediaFilenameUrl;
 	private boolean mediaFolderPickerOpen;
 
 	private ArticleJSInterface articleJSInterface;
@@ -196,6 +200,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	public void onCreate(Bundle instance) {
 		if (instance != null) {
 			pendingMediaUrl = instance.getString(PENDING_MEDIA_URL);
+			pendingMediaFilenameUrl = instance.getString(PENDING_MEDIA_FILENAME_URL);
 			mediaFolderPickerOpen = instance.getBoolean(MEDIA_FOLDER_PICKER_OPEN);
 			articleId = instance.getInt(ARTICLE_ID);
 			feedId = instance.getInt(ARTICLE_FEED_ID);
@@ -233,6 +238,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	@Override
 	public void onSaveInstanceState(Bundle instance) {
 		instance.putString(PENDING_MEDIA_URL, pendingMediaUrl);
+		instance.putString(PENDING_MEDIA_FILENAME_URL, pendingMediaFilenameUrl);
 		instance.putBoolean(MEDIA_FOLDER_PICKER_OPEN, mediaFolderPickerOpen);
 		instance.putInt(ARTICLE_ID, articleId);
 		instance.putInt(ARTICLE_FEED_ID, feedId);
@@ -250,7 +256,43 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			return;
 		}
 		pendingMediaUrl = url;
+		pendingMediaFilenameUrl = findOriginalMediaUrl(url);
 		resumePendingMediaSave();
+	}
+
+	private String findOriginalMediaUrl(String mediaUrl) {
+		if (!MediaSaveFolder.isCachedUrl(mediaUrl))
+			return mediaUrl;
+		if (article == null || article.content == null)
+			return null;
+
+		int cachedImageCount = 0;
+		boolean selectedImageIsCached = false;
+		for (Element image : Jsoup.parse(article.content).select("img[src]")) {
+			String source = image.attr("src");
+			if (MediaSaveFolder.isCachedUrl(source)) {
+				cachedImageCount++;
+				selectedImageIsCached |= mediaUrl.equals(source);
+			}
+		}
+		if (cachedImageCount != 1 || !selectedImageIsCached)
+			return null;
+
+		Collection<RemoteFile> remoteFiles = DBHelper.getInstance().getRemoteFiles(article.id);
+		if (remoteFiles == null)
+			return null;
+
+		Set<String> candidates = new HashSet<>();
+		for (RemoteFile remoteFile : remoteFiles) {
+			String url = remoteFile.url;
+			if (url == null || url.isEmpty() || MediaSaveFolder.isCachedUrl(url))
+				continue;
+			String name = MediaSaveFolder.fileName(url, null);
+			String type = MediaSaveFolder.mimeType(name, null);
+			if (type.startsWith("image/") || type.startsWith("video/"))
+				candidates.add(url);
+		}
+		return candidates.size() == 1 ? candidates.iterator().next() : null;
 	}
 
 	private void resumePendingMediaSave() {
@@ -275,14 +317,17 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			} catch (ActivityNotFoundException | IllegalArgumentException e) {
 				mediaFolderPickerOpen = false;
 				pendingMediaUrl = null;
+				pendingMediaFilenameUrl = null;
 				Log.e(TAG, "Could not open media folder picker", e);
 				Toast.makeText(requireContext(), R.string.MediaSaveFolderPickerUnavailable, Toast.LENGTH_LONG).show();
 			}
 			return;
 		}
 		String url = pendingMediaUrl;
+		String filenameUrl = pendingMediaFilenameUrl;
 		pendingMediaUrl = null;
-		articleWebViewClient.saveMedia(url, folder);
+		pendingMediaFilenameUrl = null;
+		articleWebViewClient.saveMedia(url, filenameUrl, folder);
 	}
 
 	@Override
@@ -293,6 +338,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		mediaFolderPickerOpen = false;
 		if (resultCode != Activity.RESULT_OK) {
 			pendingMediaUrl = null;
+			pendingMediaFilenameUrl = null;
 			return;
 		}
 		try {
@@ -301,6 +347,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 		} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
 				 | SQLiteException | UnsupportedOperationException e) {
 			pendingMediaUrl = null;
+			pendingMediaFilenameUrl = null;
 			Log.e(TAG, "Could not remember selected media folder", e);
 			Toast.makeText(requireContext(), getString(R.string.MediaSaveFolderSelectionFailed, e.getMessage()),
 					Toast.LENGTH_LONG).show();

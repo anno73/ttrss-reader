@@ -168,6 +168,45 @@ public class MediaSaveFolderTest {
 	}
 
 	@Test
+	public void cachedImageUsesOriginalSourceFilenameWhenAvailable() {
+		String cachedUrl = "https://tt-rss.example/public.php?op=cached&file=starred-images/253650-hash";
+		String originalUrl = "https://64.media.tumblr.com/image/s1280x1920/original.jpg";
+		try (MockedStatic<URLUtil> urls = mockStatic(URLUtil.class)) {
+			urls.when(() -> URLUtil.guessFileName(originalUrl, null, null)).thenReturn("original.jpg");
+			assertTrue(MediaSaveFolder.isCachedUrl(cachedUrl));
+			assertFalse(MediaSaveFolder.isCachedUrl("https://64.media.tumblr.com/image/original.jpg"));
+			assertEquals("original.jpg", MediaSaveFolder.fileName(cachedUrl, null, originalUrl, "image/jpeg"));
+		}
+	}
+
+	@Test
+	public void cachedImageUsesFilenameFromContentDisposition() {
+		String cachedUrl = "https://tt-rss.example/public.php?op=cached&file=starred-images/253650-hash";
+		try (MockedStatic<URLUtil> urls = mockStatic(URLUtil.class)) {
+			urls.when(() -> URLUtil.guessFileName(cachedUrl, "attachment; filename=source.jpg", null))
+					.thenReturn("source.jpg");
+			assertEquals("source.jpg", MediaSaveFolder.fileName(cachedUrl,
+					"attachment; filename=source.jpg", null, "image/jpeg"));
+		}
+	}
+
+	@Test
+	public void cachedImageUsesTimestampAndMimeExtensionWhenOriginalNameIsUnavailable() {
+		String cachedUrl = "https://tt-rss.example/public.php?op=cached&file=starred-images/253650-hash";
+		MimeTypeMap map = mock(MimeTypeMap.class);
+		try (MockedStatic<URLUtil> urls = mockStatic(URLUtil.class);
+			 MockedStatic<MimeTypeMap> maps = mockStatic(MimeTypeMap.class)) {
+			urls.when(() -> URLUtil.guessFileName(cachedUrl, null, null)).thenReturn("public.php.jpg");
+			maps.when(MimeTypeMap::getSingleton).thenReturn(map);
+			when(map.getExtensionFromMimeType("image/jpeg")).thenReturn("jpg");
+
+			String name = MediaSaveFolder.fileName(cachedUrl, null, null, "image/jpeg");
+			assertTrue(name, name.matches("\\d{8}-\\d{6}\\.jpg"));
+			assertFalse(name, name.contains("public.php"));
+		}
+	}
+
+	@Test
 	public void mimeTypeSupportsImagesVideoAndGenericResponseHeaders() {
 		MimeTypeMap map = mock(MimeTypeMap.class);
 		try (MockedStatic<MimeTypeMap> maps = mockStatic(MimeTypeMap.class)) {
@@ -250,19 +289,21 @@ public class MediaSaveFolderTest {
 			 MockedStatic<Utils> utils = mockStatic(Utils.class)) {
 			storage.when(Environment::getExternalStorageState).thenReturn(Environment.MEDIA_UNMOUNTED);
 			folders.when(() -> MediaSaveFolder.displayName(context, tree)).thenReturn("Selected folder");
-			folders.when(() -> MediaSaveFolder.fileName(url.toString(), null)).thenReturn("photo.jpg");
+			folders.when(() -> MediaSaveFolder.fileName(url.toString(), null, url.toString(), "image/jpeg"))
+					.thenReturn("photo.jpg");
 			folders.when(() -> MediaSaveFolder.mimeType("photo.jpg", "image/jpeg")).thenReturn("image/jpeg");
 			folders.when(() -> MediaSaveFolder.write(eq(context), eq(tree), eq("photo.jpg"),
 					eq("image/jpeg"), any())).thenReturn("photo.jpg");
 
 			Class<?> saver = Class.forName("org.ttrssreader.gui.view.ArticleWebViewClient$AsyncMediaSaver");
-			Constructor<?> constructor = saver.getDeclaredConstructor(Context.class, Uri.class);
+			Constructor<?> constructor = saver.getDeclaredConstructor(Context.class, Uri.class, String.class);
 			constructor.setAccessible(true);
-			Object instance = constructor.newInstance(context, tree);
+			Object instance = constructor.newInstance(context, tree, url.toString());
 			Method background = saver.getDeclaredMethod("doInBackground", URL[].class);
 			background.setAccessible(true);
 			background.invoke(instance, (Object) new URL[]{url});
 
+			folders.verify(() -> MediaSaveFolder.fileName(url.toString(), null, url.toString(), "image/jpeg"));
 			folders.verify(() -> MediaSaveFolder.write(eq(context), eq(tree), eq("photo.jpg"),
 					eq("image/jpeg"), any()));
 			storage.verify(Environment::getExternalStorageState, never());

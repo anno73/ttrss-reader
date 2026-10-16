@@ -18,13 +18,18 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class MediaSaveFolder {
 	private static final String TAG = MediaSaveFolder.class.getSimpleName();
 	private static final int GRANTS = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+	private static final Pattern CONTENT_DISPOSITION_FILENAME =
+			Pattern.compile("(?:^|;)\\s*filename\\*?\\s*=", Pattern.CASE_INSENSITIVE);
 
 	private MediaSaveFolder() {
 	}
@@ -118,6 +123,54 @@ public final class MediaSaveFolder {
 		name = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
 		name = name.replaceAll("[\\p{Cntrl}]", "_");
 		return name.isEmpty() || ".".equals(name) || "..".equals(name) ? "download" : name;
+	}
+
+	public static boolean isCachedUrl(String url) {
+		if (url == null)
+			return false;
+		int fragmentStart = url.indexOf('#');
+		String withoutFragment = fragmentStart < 0 ? url : url.substring(0, fragmentStart);
+		int queryStart = withoutFragment.indexOf('?');
+		if (queryStart < 0 || !"public.php".equalsIgnoreCase(
+				withoutFragment.substring(0, queryStart).replaceAll("^.*[/\\\\]", "")))
+			return false;
+
+		for (String parameter : withoutFragment.substring(queryStart + 1).split("&")) {
+			int separator = parameter.indexOf('=');
+			if (separator > 0 && "op".equalsIgnoreCase(parameter.substring(0, separator))
+					&& "cached".equalsIgnoreCase(parameter.substring(separator + 1)))
+				return true;
+		}
+		return false;
+	}
+
+	public static String fileName(String url, String disposition, String originalUrl, String responseType) {
+		if (originalUrl != null && !originalUrl.isEmpty() && !isCachedUrl(originalUrl))
+			return fileName(originalUrl, disposition);
+		if (!isCachedUrl(url))
+			return fileName(url, disposition);
+
+		String guessed = fileName(url, disposition);
+		if (CONTENT_DISPOSITION_FILENAME.matcher(disposition == null ? "" : disposition).find()
+				&& !isCachedFileName(guessed))
+			return guessed;
+		return timestampFileName(responseType);
+	}
+
+	private static boolean isCachedFileName(String name) {
+		return "public.php".equalsIgnoreCase(name)
+				|| name.toLowerCase(Locale.ROOT).startsWith("public.php.");
+	}
+
+	private static String timestampFileName(String responseType) {
+		String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(new Date());
+		if (responseType == null)
+			return timestamp;
+		String type = responseType.split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
+		String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(type);
+		if (extension == null || !extension.matches("[a-zA-Z0-9]+"))
+			return timestamp;
+		return timestamp + "." + extension.toLowerCase(Locale.ROOT);
 	}
 
 	public static String mimeType(String name, String responseType) {

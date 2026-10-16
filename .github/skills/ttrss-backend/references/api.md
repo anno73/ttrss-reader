@@ -103,8 +103,10 @@ When both fail, the original error is preserved and a separate `cleanupError`
 reports logout failure. A failed mutation may have partially or fully applied:
 inspect state before any retry. Login responses and session IDs are never data.
 
-The final JSON also redacts exact occurrences of the selected credentials and
-session ID as defense in depth. This is not a general data-loss-prevention system.
+Backend result data and diagnostic messages also redact exact occurrences of
+the selected credentials and session ID as defense in depth. Fixed output field
+names and allowlisted error codes remain intact, even if a credential happens
+to match them. This is not a general data-loss-prevention system.
 
 ## Compatibility and sources
 

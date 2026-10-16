@@ -451,6 +451,12 @@ UNRELATED=value # literal inline content
         Assert ($body.data[0].nested[0] -eq '[REDACTED]')
     }
 
+    Test 'credentials matching protocol words cannot corrupt the error schema' {
+        Write-Fixture '.env' "TTRSS_PERSONAL_USERNAME=code`nTTRSS_PERSONAL_PASSWORD=LOGIN_ERROR`n"
+        Queue-Reply @{ error = 'LOGIN_ERROR' } 1
+        Assert-Code (Invoke-Client) 'LOGIN_ERROR'
+    }
+
     Test 'script resolves configuration from its location outside working directory and exits nonzero' {
         $scriptPath = Join-Path $PSScriptRoot '..\scripts\ttrss.ps1'
         Push-Location $root

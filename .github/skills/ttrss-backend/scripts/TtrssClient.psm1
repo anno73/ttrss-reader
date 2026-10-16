@@ -368,8 +368,13 @@ function Invoke-TtrssCommand {
     }
     $orderedSecrets = @($secrets | Sort-Object Length -Descending)
     try {
-        foreach ($key in @($result.Keys)) {
+        foreach ($key in @('data', 'profile', 'command')) {
             $result[$key] = Protect-TtrssValue $result[$key] $orderedSecrets
+        }
+        foreach ($key in @('error', 'cleanupError')) {
+            if ($result.Contains($key) -and $null -ne $result[$key]) {
+                $result[$key].message = Protect-TtrssValue $result[$key].message $orderedSecrets
+            }
         }
     }
     catch {

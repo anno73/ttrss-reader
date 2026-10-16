@@ -37,5 +37,16 @@
   boundary against an agent with filesystem access.
 - Initial CI run `38927238024` exposed a missing .NET assembly reference in the
   test fixture compiler. Added explicit framework references; no external
-  dependency or package installation is required. Follow-up CI pending.
-- Workflow result and APK download: pending.
+  dependency or package installation is required.
+- Run `38927423283` succeeded: 91 PowerShell tests passed and both Android
+  flavors built, with package/provider identity and signing checks passing.
+- Downloaded `ttrss-reader-debug.zip` to `downloaded-apk/run-38927423283/`,
+  verified SHA-256 against the GitHub artifact digest, and extracted directly
+  into that directory. Verified both
+  `ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk` and
+  `ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk` exist.
+- Final hardening preserves fixed error-schema keys and allowlisted error codes
+  even when credentials coincide with protocol words; a regression test covers
+  this. Follow-up CI verification is pending.
+- Local user edits to configuration and an untracked configuration copy appeared
+  during implementation. They are preserved and excluded from task commits.

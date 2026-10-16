@@ -31,8 +31,11 @@
 
 - Upstream protocol checked against tt-rss commit
   `270fcc71f867b4669e330332aaf60e329107fc06`, API entry point and API handlers.
-- No real backend has been contacted. Live/manual tests require a configured
-  endpoint, privately populated `.env`, and explicit authorization.
+- After the user configured credentials and explicitly requested a live check,
+  ran `Check` with profile `test`. The backend was reachable but returned
+  `API_DISABLED` during login (exit 1). Credentials could not be verified because
+  the upstream handler checks API enablement before authentication. Enable API
+  access for that tt-rss account before retrying; no article state was changed.
 - `.env` is plaintext. Git-ignore and skill instructions are not an isolation
   boundary against an agent with filesystem access.
 - Initial CI run `38927238024` exposed a missing .NET assembly reference in the
@@ -63,4 +66,5 @@
   is unchanged from the verified run above.
 - Local user edits to configuration and an untracked configuration copy appeared
   during implementation. They are preserved and excluded from task commits.
-- Live/manual verification remains outstanding; the branch has not been merged.
+- Successful live/manual verification remains blocked on backend API enablement;
+  the branch has not been merged.

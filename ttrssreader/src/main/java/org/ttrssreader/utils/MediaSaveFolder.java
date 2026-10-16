@@ -147,14 +147,18 @@ public final class MediaSaveFolder {
 	public static String fileName(String url, String disposition, String originalUrl, String responseType) {
 		if (originalUrl != null && !originalUrl.isEmpty() && !isCachedUrl(originalUrl))
 			return fileName(originalUrl, disposition);
-		if (!isCachedUrl(url))
+		if (!isCachedUrl(url) && !isLocalFileUrl(url))
 			return fileName(url, disposition);
 
 		String guessed = fileName(url, disposition);
 		if (CONTENT_DISPOSITION_FILENAME.matcher(disposition == null ? "" : disposition).find()
-				&& !isCachedFileName(guessed))
+				&& !isCachedFileName(guessed) && !isLocalFileUrl(url))
 			return guessed;
 		return timestampFileName(responseType);
+	}
+
+	private static boolean isLocalFileUrl(String url) {
+		return url != null && url.regionMatches(true, 0, "file:", 0, "file:".length());
 	}
 
 	private static boolean isCachedFileName(String name) {

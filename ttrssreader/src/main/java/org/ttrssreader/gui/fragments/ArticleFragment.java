@@ -261,9 +261,27 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 	}
 
 	private String findOriginalMediaUrl(String mediaUrl) {
-		if (!MediaSaveFolder.isCachedUrl(mediaUrl))
+		if (mediaUrl == null || mediaUrl.isEmpty())
+			return null;
+		if (!MediaSaveFolder.isCachedUrl(mediaUrl) && !mediaUrl.startsWith("file:"))
 			return mediaUrl;
-		if (article == null || article.content == null)
+		if (article == null)
+			return null;
+
+		Collection<RemoteFile> remoteFiles = DBHelper.getInstance().getRemoteFiles(article.id);
+		if (remoteFiles == null)
+			return null;
+
+		if (mediaUrl.startsWith("file:")) {
+			String cachedFileName = mediaUrl.substring(mediaUrl.lastIndexOf('/') + 1);
+			for (RemoteFile remoteFile : remoteFiles) {
+				if (remoteFile.url != null && ImageCache.getHashForKey(remoteFile.url).equals(cachedFileName))
+					return MediaSaveFolder.isCachedUrl(remoteFile.url) ? null : remoteFile.url;
+			}
+			return null;
+		}
+
+		if (article.content == null)
 			return null;
 
 		int cachedImageCount = 0;
@@ -276,10 +294,6 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			}
 		}
 		if (cachedImageCount != 1 || !selectedImageIsCached)
-			return null;
-
-		Collection<RemoteFile> remoteFiles = DBHelper.getInstance().getRemoteFiles(article.id);
-		if (remoteFiles == null)
 			return null;
 
 		Set<String> candidates = new HashSet<>();

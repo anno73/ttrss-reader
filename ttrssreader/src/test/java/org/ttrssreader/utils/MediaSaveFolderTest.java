@@ -207,6 +207,22 @@ public class MediaSaveFolderTest {
 	}
 
 	@Test
+	public void locallyCachedImageDoesNotUseCacheKeyAsFilename() {
+		String cachedUrl = "file:///data/data/app/cache/https+++tt-rss.example+public.php+op+cached+file+starred-images";
+		MimeTypeMap map = mock(MimeTypeMap.class);
+		try (MockedStatic<URLUtil> urls = mockStatic(URLUtil.class);
+			 MockedStatic<MimeTypeMap> maps = mockStatic(MimeTypeMap.class)) {
+			urls.when(() -> URLUtil.guessFileName(cachedUrl, null, null)).thenReturn("https+++tt-rss.example.jpg");
+			maps.when(MimeTypeMap::getSingleton).thenReturn(map);
+			when(map.getExtensionFromMimeType("image/jpeg")).thenReturn("jpg");
+
+			String name = MediaSaveFolder.fileName(cachedUrl, null, null, "image/jpeg");
+			assertTrue(name, name.matches("\\d{8}-\\d{6}\\.jpg"));
+			assertFalse(name, name.contains("tt-rss"));
+		}
+	}
+
+	@Test
 	public void mimeTypeSupportsImagesVideoAndGenericResponseHeaders() {
 		MimeTypeMap map = mock(MimeTypeMap.class);
 		try (MockedStatic<MimeTypeMap> maps = mockStatic(MimeTypeMap.class)) {

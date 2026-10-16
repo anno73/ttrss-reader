@@ -47,6 +47,20 @@
   `ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk` exist.
 - Final hardening preserves fixed error-schema keys and allowlisted error codes
   even when credentials coincide with protocol words; a regression test covers
-  this. Follow-up CI verification is pending.
+  this.
+- Final executable code at `b98b4e32` passed workflow run `38927846138`:
+  92 PowerShell tests passed, zero failed; Android tests, both APK builds,
+  package/provider checks and signing checks succeeded.
+- Downloaded the final code-run archive to
+  `downloaded-apk/run-38927846138/ttrss-reader-debug.zip`, checked its SHA-256
+  (`5d022cb53c339102a6eb431b4ea32fe212ce736fbacf577cde0f7d5777a42d5e`)
+  against the artifact digest, and verified both APKs in the same required
+  extraction layout. ZIP: 21,295,840 bytes; F-Droid APK: 12,022,215 bytes;
+  Play APK: 12,547,616 bytes.
+- No local compilation, builds or tests were run. Editor diagnostics reported
+  no errors in the PowerShell files, workflow or configuration schema.
+- The final plan-only documentation commit uses `[skip ci]`; executable content
+  is unchanged from the verified run above.
 - Local user edits to configuration and an untracked configuration copy appeared
   during implementation. They are preserved and excluded from task commits.
+- Live/manual verification remains outstanding; the branch has not been merged.

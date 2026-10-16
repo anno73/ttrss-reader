@@ -109,6 +109,8 @@ The API reference defines authentication roles, not a privacy-redaction standard
 - [x] Add regression tests for feed operations, categories, missing records, URL credential/token redaction, and delayed response-body timeouts.
 - [x] Document the feed name/source URL diagnostics and redaction in README.md.
 - [x] Check editor diagnostics and `git diff --check` (using the repository's CRLF-aware whitespace setting).
-- [ ] Run the focused tests and F-Droid debug build through GitHub Actions; no local build will be run.
+- [x] Run the timeout-diagnostics/media-saving tests and F-Droid debug build through GitHub Actions; no local Android build was run.
 
-Local validation limitation: the focused Gradle test task could not run because this machine has no Android SDK (`SDK location not found`). The initial attempt also exposed absent private Maven credentials. Use the repository's GitHub Actions Android CI, which is configured with the required build environment and secrets.
+Validation result: Android CI run [#38895094926](https://github.com/anno73/ttrss-reader/actions/runs/38895094926) passed, including the `Test timeout diagnostics and media saving`, `Build debug APK`, APK package/provider identity, and APK signing identity steps. The generated artifact was downloaded to `downloaded-apk/run-38895094926/ttrss-reader-debug.zip`.
+
+Local validation limitation: the focused Gradle test task could not run because this machine has no Android SDK (`SDK location not found`). The initial attempt also exposed absent private Maven credentials; no local build was run. On-device timeout behavior was not manually verified in this session.

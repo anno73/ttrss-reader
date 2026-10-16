@@ -13,8 +13,9 @@ or command arguments. Requires Windows PowerShell 5.1 and .NET Framework 4.7.2+
 ## Setup
 
 1. Read [configuration and API reference](./references/api.md).
-2. Have the user edit project-root `ttrss.config.json` with their HTTPS API URL.
-   The committed URLs are placeholders. Keep private hostnames out of commits.
+2. Have the user copy project-root `ttrss.config.json.example` to
+   `ttrss.config.json` only if it does not already exist, then edit their HTTPS
+   API URL privately. The local config is Git-ignored; never force-add it.
 3. Have the user copy `.env.example` to `.env` and fill it in privately.
    Do not read, display, generate real credentials, or request them in chat.
 4. Run `Check` with the chosen profile. API access must be enabled for that user

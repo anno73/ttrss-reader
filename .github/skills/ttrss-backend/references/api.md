@@ -2,9 +2,10 @@
 
 ## Local setup
 
-Edit [project configuration](../../../../ttrss.config.json), copy
+Copy [the config template](../../../../ttrss.config.json.example) to project-root
+`ttrss.config.json` if it does not already exist, then edit it privately. Copy
 [the dotenv template](../../../../.env.example) to project-root `.env`, and
-enter credentials privately. `.env` is already Git-ignored. Do not overwrite an
+enter credentials privately. Both local files are Git-ignored. Do not overwrite an
 existing `.env`; add only missing keys. The client does not read Android account
 settings or use inherited environment variables.
 
@@ -29,8 +30,8 @@ through 300 seconds, per request.
 
 URLs must be absolute HTTPS URLs without user info, query strings or fragments.
 Use the full endpoint, including any installation subdirectory and `/api/`.
-The committed configuration has public example URLs, not a working instance.
-If the real hostname is private, do not commit your configuration change.
+The committed template has public example URLs, not a working instance.
+Keep the real configuration local; never force-add it to Git.
 
 ### Dotenv grammar
 

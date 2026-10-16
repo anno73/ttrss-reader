@@ -36,6 +36,13 @@
   A separate GetFeeds call confirmed title PetaPixel, the exact feed URL and
   the returned ID. Both invocations completed logout successfully.
 - Real credentials and backend configuration remained local and untouched.
+- User confirmed that the UI/manual check passed, then explicitly approved
+  merging. Merged and pushed to master as `cb02eb09`.
+- Post-merge workflow
+  [38936370335](https://github.com/anno73/ttrss-reader/actions/runs/38936370335)
+  succeeded for both jobs. Downloaded its ZIP into
+  `downloaded-apk/run-38936370335/`, verified digest
+  `ae4607e6f7e8c49fe8754f5ddef90869de7c01d015204e160d012ddfca3ce044`,
+  and verified both extracted APKs in the same required layout.
 - Final plan-only commit uses `[skip ci]`; executable code is identical to the
-  verified run. User UI/manual confirmation and explicit merge approval remain
-  outstanding; no merge has been performed.
+  verified post-merge run. Work completed; local configuration remains ignored.

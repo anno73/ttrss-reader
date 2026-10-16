@@ -42,8 +42,9 @@
   `ttrssreader/build/outputs/apk/{fdroid,play}/debug/` APK paths.
 - The final plan-only commit skips CI; executable files are unchanged from the
   successful runs. The user confirmed manual verification passed, including
-  continued local backend config operation. Merge approval remains pending;
-  nothing was merged into `master`.
+  continued local backend config operation. The user explicitly approved merging
+  `chore/remove-private-config-history` into `master`; the backend-skill branch
+  remains separate.
 - The project virtual environment created during tooling setup was removed.
   Python tooling for the cleanup runs through `uvx`.
 - Rewriting Git refs cannot remove copies in other clones, forks, GitHub cached

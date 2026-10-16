@@ -4,7 +4,7 @@ Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot '..\scripts\TtrssClient.psm1') -Force
 $module = Get-Module TtrssClient
 
-Add-Type -TypeDefinition @'
+Add-Type -ReferencedAssemblies 'System.Net.Http', 'System.Core', 'System' -TypeDefinition @'
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -124,6 +124,7 @@ try {
             param([int]$Timeout)
             $client = New-Object System.Net.Http.HttpClient((New-Object TtrssFakeHandler))
             $client.Timeout = [TimeSpan]::FromSeconds($Timeout)
+            $client.MaxResponseContentBufferSize = 4194304
             return $client
         }
     }
@@ -404,6 +405,14 @@ UNRELATED=value # literal inline content
         Assert ([TtrssFakeHandler]::Bodies.Count -eq 1)
     }
 
+    Test 'oversized response is rejected by HTTP buffering limit' {
+        $fixture = New-Object TtrssFixture
+        $fixture.Json = 'x' * 4194305
+        [TtrssFakeHandler]::Responses.Enqueue($fixture)
+        Assert-Code (Invoke-Client) 'TRANSPORT_ERROR'
+        Assert ([TtrssFakeHandler]::Bodies.Count -eq 1)
+    }
+
     Test 'ambiguous mutation transport failure still logs out without replay' {
         Queue-Login
         $fixture = New-Object TtrssFixture
@@ -430,9 +439,9 @@ UNRELATED=value # literal inline content
     }
 
     Test 'redaction handles equal-length secrets, escaped values, nested data and JSON booleans' {
-        Write-Fixture '.env' "TTRSS_PERSONAL_USERNAME=true`nTTRSS_PERSONAL_PASSWORD='a`"b\c'`n"
+        Write-Fixture '.env' "TTRSS_PERSONAL_USERNAME=true`nTTRSS_PERSONAL_PASSWORD='a`"b\'`n"
         Queue-Login
-        Queue-Reply @(@{ title = 'true and a"b\c and fixture-session'; unread = $true; nested = @('true') })
+        Queue-Reply @(@{ title = 'true and a"b\ and fixture-session'; unread = $true; nested = @('true') })
         Queue-Logout
         $result = Invoke-TtrssCommand -ProjectRoot $root -Options @{ Command = 'GetFeeds' }
         $body = ConvertFrom-Json $result.Json
@@ -462,3 +471,4 @@ finally {
     Remove-Item -LiteralPath (Join-Path $root '.env') -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $root -Force
 }
+exit 0

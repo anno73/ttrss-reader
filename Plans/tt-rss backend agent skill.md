@@ -23,7 +23,9 @@
   example profile configuration and dotenv template.
 - Reused existing `.env` ignore rule; no real credentials were read or created.
 - Added README setup guidance and Windows PowerShell contract-test job.
-- Test implementation and CI verification in progress.
+- Added offline contract tests with an in-memory HTTP handler, exercising
+  configuration/dotenv parsing, argument guards, request mapping, pagination,
+  API/HTTP errors, size limits, cleanup, and secret-safe JSON output.
 
 ## Validation and limitations
 
@@ -33,4 +35,7 @@
   endpoint, privately populated `.env`, and explicit authorization.
 - `.env` is plaintext. Git-ignore and skill instructions are not an isolation
   boundary against an agent with filesystem access.
+- Initial CI run `38927238024` exposed a missing .NET assembly reference in the
+  test fixture compiler. Added explicit framework references; no external
+  dependency or package installation is required. Follow-up CI pending.
 - Workflow result and APK download: pending.

@@ -11,6 +11,15 @@ permissions:
   contents: read
 
 jobs:
+  ttrss-skill:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Test tt-rss skill with Windows PowerShell 5.1
+        shell: powershell
+        run: .\.github\skills\ttrss-backend\tests\Test-TtrssClient.ps1
+
   build:
     runs-on: ubuntu-latest
 

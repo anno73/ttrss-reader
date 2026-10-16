@@ -12,6 +12,16 @@ Since google announced that the downloads from google-code will not be available
  * [**Download current Version**](https://github.com/nilsbraden/ttrss-reader-fork/releases)
  * ([**Changelog**](https://github.com/nilsbraden/ttrss-reader-fork/wiki/Changelog))
 
+# Agent access to a tt-rss backend
+
+The [tt-rss backend skill](.github/skills/ttrss-backend/SKILL.md) supports reading
+feeds/articles, explicit read/star changes, and user-authorized RSS subscriptions.
+It uses Windows PowerShell 5.1 without external modules. Copy
+[ttrss.config.json.example](ttrss.config.json.example) to `ttrss.config.json`
+and [.env.example](.env.example) to `.env`, then configure them privately.
+Both live configuration files are Git-ignored. Never commit credentials or
+private endpoint URLs. See the skill for supported commands and safety rules.
+
 # Installing and updating GitHub Actions APKs
 
 The **Android CI** workflow builds Play and F-Droid debug APKs for this fork

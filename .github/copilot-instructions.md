@@ -17,3 +17,10 @@
 - Push the task branch to its GitHub upstream and verify the push succeeds.
 - Merge the branch into `master` only after manual tests have passed and the user has explicitly approved the merge. If manual tests have not passed or cannot be run, do not merge.
 - As the final interaction, ask the user whether to merge after successful manual tests, or ask for the manual-test result when it is not yet known. Do not ask earlier or merge without approval.
+
+## Backend API
+
+- Find sources for the backend API in https://github.com/tt-rss/tt-rss/
+- Refer to the API documentation and code comments within the repository to understand the available endpoints and their usage.
+- When implementing features that interact with the backend API, ensure that your requests conform to the expected formats and handle responses appropriately.
+- Write tests for any new API interactions to verify correct behavior and error handling.

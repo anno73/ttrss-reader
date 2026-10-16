@@ -1,0 +1,13 @@
+{
+  "defaultProfile": "personal",
+  "profiles": {
+    "personal": {
+      "apiUrl": "https://rss.example.net/tt-rss/api/",
+      "timeoutSeconds": 30
+    },
+    "test": {
+      "apiUrl": "https://rss-test.example.net/api/",
+      "timeoutSeconds": 15
+    }
+  }
+}

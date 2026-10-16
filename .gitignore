@@ -7,13 +7,16 @@
 ttrssreader/build/
 /captures
 .env
-/downloaded-apk
+/downloaded-apk/**
 .vscode
+ttrss.config.json
 
 signingconfig.gradle
 *.keystore
 *.jks
 ttrssreader/google-services.json
+
+
 
 /TTRSS-Reader-*.apk
 /TTRSS-Reader-*_mapping.txt

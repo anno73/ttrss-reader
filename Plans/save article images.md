@@ -42,4 +42,7 @@
 - Manual-test result is user-reported; no device testing was performed in this development environment.
 - Merged into master after successful feature CI, user-reported manual tests, and explicit user approval.
 - Filename regression follow-up: prefer the selected image's source URL, or the source URL recovered from the same article's stored remote-file/cache-key mapping, over TT-RSS's `public.php?op=cached` proxy or app-local cache URL. For ambiguous/missing mappings, use a `yyyyMMdd-HHmmss` basename with the response-inferred media extension; existing duplicate-name handling remains in force.
-- Added regression coverage for original-source filenames, `Content-Disposition` filenames, and timestamp/extension fallback for server and app-local cache URLs. Source diagnostics passed; final GitHub Actions results will be recorded after the task branch is pushed.
+- Added regression coverage for original-source filenames, `Content-Disposition` filenames, and timestamp/extension fallback for server and app-local cache URLs. Source diagnostics reported no errors.
+- GitHub Actions run `38865941003` passed the media-save unit tests, both debug APK builds, package/provider checks, and signing verification for commit `1f32b940`.
+- Downloaded and extracted the APK artifact under `downloaded-apk/run-38865941003/`; verified its SHA-256 against GitHub metadata (`de9f49e29ae23f0bbf05a94760faf1cc6b8c38f30107919bb9044dbdb6730cdf`). No local Android APK build was attempted.
+- Device/manual testing was not available during this task; do not merge until manual tests pass and the user explicitly approves.

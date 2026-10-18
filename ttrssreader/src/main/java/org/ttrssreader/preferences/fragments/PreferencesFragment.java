@@ -33,6 +33,9 @@ import org.ttrssreader.gui.dialogs.YesNoResultListener;
 import org.ttrssreader.preferences.Constants;
 import org.ttrssreader.preferences.PreferencesActivity;
 import org.ttrssreader.utils.AsyncTask;
+import org.ttrssreader.utils.Utils;
+
+import java.util.Objects;
 
 import androidx.annotation.Keep;
 import androidx.fragment.app.FragmentManager;
@@ -48,6 +51,7 @@ public class PreferencesFragment extends PreferenceFragmentCompat implements Yes
 	private static final String KEY_RESET_PREFERENCES = "ResetPreferences";
 	private static final String KEY_RESET_DATABASE = "ResetDatabase";
 	private static final String KEY_RESET_CACHE = "ResetCache";
+	private static final String KEY_APP_VERSION = "AppVersion";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -57,6 +61,8 @@ public class PreferencesFragment extends PreferenceFragmentCompat implements Yes
 	@Override
 	public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 		addPreferencesFromResource(R.xml.prefs_main);
+		Preference version = Objects.requireNonNull(findPreference(KEY_APP_VERSION));
+		version.setSummary(Utils.getAppVersionName(requireContext()));
 	}
 
 	@Override

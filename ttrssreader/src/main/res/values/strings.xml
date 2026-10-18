@@ -304,6 +304,7 @@
     <string name="WebViewClientRequestStoragePermission">The following permission is required to download files: android.permission.WRITE_EXTERNAL_STORAGE</string>
     <string name="WebViewClientStoragePermissionDenied">Storage permission was denied. The media was not saved.</string>
     <string name="About_PrefCategory">Information</string>
+    <string name="About_version">Version</string>
     <string name="About_about">About</string>
     <string name="About_about_hint">About this app</string>
     <string name="About_project">Project-Page</string>

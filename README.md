@@ -21,6 +21,43 @@ private endpoint URLs. See the skill for supported commands and safety rules.
 
 # Installing and updating GitHub Actions APKs
 
+## Build versions
+
+The Android version name is `<normalized-branch>_yyyy-MM-dd_HH-mm-ss`, using
+the build time in **UTC**, for example `master_2026-10-18_15-46-18`.
+Characters outside letters, digits, `.`, `-` and `_` in the source branch
+are replaced individually with `_`: `feature/some-feature-branch-name`
+becomes `feature_some-feature-branch-name`. Pull-request builds use the
+source branch, not the temporary merge ref.
+
+**Preferences > Information > Version** displays the full installed version
+as a read-only row. The About screen uses the same installed package metadata.
+Installing a differently named build triggers the existing one-time new-version
+handling; reopening that installed build does not.
+
+The numeric Android `versionCode` is whole seconds since **2020-01-01 00:00:00
+UTC**, derived from the same build instant. Builds fail if the code is not
+greater than the previous fixed code `1982` or exceeds Google Play's limit of
+`2100000000` (reached in 2086). The full `yyyyMMddHHmmss` date would not fit
+Android's standard integer version code.
+
+CI generates one timestamp for the build job and shares it across Gradle
+invocations and both flavors. Outside CI, Gradle reads the Git branch and
+current UTC time. For detached checkouts, explicitly set `APP_BUILD_BRANCH`.
+Optionally set `APP_BUILD_TIMESTAMP` to a canonical UTC instant such as
+`2026-10-18T15:46:18Z` to reuse a build instant across invocations. Missing
+branch information or malformed timestamps fail the build rather than
+silently producing misleading metadata.
+
+Version codes follow build time, not commit ancestry or completion order,
+and depend on an accurate build clock. Normal Android updates reject an older
+APK's lower version code, including across branches; rebuild the desired
+branch later instead. Same-second builds can share a code (and, on the same
+branch, a name), so this is not a uniqueness guarantee for Play releases.
+Application IDs and signing requirements are unchanged.
+
+## APK signing
+
 The **Android CI** workflow builds Play and F-Droid debug APKs for this fork
 (`org.ttrssreader.anno73`). In-place Android updates require the same signing
 key on every build. Fresh runners otherwise generate different debug keys,
@@ -194,4 +231,3 @@ retries are unchanged; see **API timeouts** for configuring timeout durations.
 ![Screenshot 7](http://nilsbraden.de/android/screenshots/small/Screenshot_2014-01-02-16-34-39_1.png)
 ![Screenshot 8](http://nilsbraden.de/android/screenshots/small/Screenshot_2014-01-02-16-35-11_1.png)
 ![Screenshot 9](http://nilsbraden.de/android/screenshots/small/Screenshot_2014-01-02-16-35-30_1.png)
-

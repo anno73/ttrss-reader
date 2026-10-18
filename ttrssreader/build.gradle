@@ -15,6 +15,7 @@
  * not, see http://www.gnu.org/licenses/.
  */
 apply plugin: 'com.android.application'
+apply from: rootProject.file('gradle/app-version.gradle')
 
 android {
     namespace = 'org.ttrssreader'
@@ -22,6 +23,8 @@ android {
 
     defaultConfig {
         applicationId = 'org.ttrssreader.anno73'
+        versionName = appVersion.name
+        versionCode = appVersion.code
         minSdkVersion 23
         targetSdkVersion 36
         multiDexEnabled = true

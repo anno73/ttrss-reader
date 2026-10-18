@@ -1,0 +1,104 @@
+# Branch and build timestamp app version
+
+## Agreed scope
+
+- Replace `1.98.2` with `<normalized-branch>_yyyy-MM-dd_HH-mm-ss`, in UTC.
+- Replace each branch character outside `[A-Za-z0-9._-]` with `_`; use the PR
+  source branch, never its temporary merge ref. Fail on unidentified branches.
+- Derive numeric version code from the same instant as whole seconds since
+  `2020-01-01T00:00:00Z`. Require `1982 < code <= 2100000000`.
+- Show the installed version in a read-only Version row under Preferences >
+  Information. Reuse package metadata so it agrees with the existing About screen.
+- Preserve application ID, signing, flavors and existing new-version handling.
+- No backend API changes. No local compilation, Gradle execution or Android SDK.
+
+## Executed work
+
+1. Created `feature/branch-build-version` from `origin/master` (`d2102f62`).
+   Left the unrelated media-folder branch and untracked TODO file untouched.
+2. Added [shared Gradle version generation](../gradle/app-version.gradle),
+   wired it into the [module configuration](../ttrssreader/build.gradle), and
+   removed obsolete manifest version attributes.
+3. Added the read-only preference and default title resource. Its summary uses
+   the existing installed-package version helper; it has no click action or
+   persistent preference value.
+4. Updated [Android CI](../.github/workflows/android-build.yml) to capture one
+   UTC instant for all Gradle invocations and both APK flavors, test the actual
+   generator, and compare both packaged version names and codes with independently
+   calculated expectations. Existing unit tests and identity/signing checks remain.
+5. Documented format, inputs, UTC, code limits and update behavior in the
+   [README](../README.md).
+6. Committed implementation as `ff91faeb` with the required co-author trailer and
+   pushed the task branch to its upstream. Verified the successful CI run belongs
+   to that exact commit, downloaded the artifact and verified the required layout.
+   This execution record is committed separately; its push also triggers Android
+   CI and was verified before handoff.
+7. User confirmed that the version feature works, reported uninstalling the old
+   app was necessary, and requested no further changes. In-place update/data
+   preservation therefore remains unverified; no signing fix is claimed.
+8. User explicitly requested finalization and merge into master, followed by CI
+   compilation, checks and APK download. Proceed with this approval, retaining
+   the installation limitation above. Record merged-build results below.
+
+## Validation
+
+- Editor diagnostics: no reported errors in the changed Java, Gradle or workflow
+  files. This is not a substitute for CI compilation.
+- Generator checks in CI cover the requested example formats, punctuation,
+  non-ASCII and long branch names, epoch conversion, the maximum accepted code,
+  missing branches, malformed dates, fractional/non-UTC timestamps, leap seconds,
+  and lower/upper range rejection.
+- [Android CI run 39142484414](https://github.com/anno73/ttrss-reader/actions/runs/39142484414):
+  **passed** for `ff91faeb8074da106aae761c877dc635a4e03dc6`.
+- Generator verification and existing timeout/media unit tests passed. Both
+  F-Droid and Play debug APKs built successfully; exact packaged version,
+  package/provider identity and persistent signing checks passed for each.
+- Both packaged version names:
+  `feature_branch-build-version_2026-10-18_15-53-09`.
+- Both numeric version codes: `214501989`.
+- Download verified (nonempty ZIP and both extracted APKs):
+  - [Retained ZIP](../downloaded-apk/run-39142484414/ttrss-reader-debug.zip)
+    (21,296,039 bytes).
+  - [F-Droid APK](../downloaded-apk/run-39142484414/ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk)
+    (12,022,870 bytes).
+  - [Play APK](../downloaded-apk/run-39142484414/ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk)
+    (12,548,243 bytes).
+- ZIP paths were preserved directly under `downloaded-apk/run-39142484414/`,
+  without flattening or an extra artifact-name directory. Downloads are ignored
+  by Git, not committed.
+- No local compilation, Gradle tasks or tests were run.
+- [Final feature-branch CI run 39142702658](https://github.com/anno73/ttrss-reader/actions/runs/39142702658):
+  **passed** for `1eac7c28ab254e8233fcbecf70d663525b4538e8`.
+  Both versions were `feature_branch-build-version_2026-10-18_15-56-10`,
+  code `214502170`. ZIP and both APKs were verified under
+  `downloaded-apk/run-39142702658/` in the same required layout.
+- Manual version-feature test: **passed**, as confirmed by the user.
+  Installing over the prior app did not work; user uninstalled it first.
+- Merged-master CI and downloads: awaiting execution.
+
+## Manual acceptance
+
+- Install the matching-signer APK over an existing installation; settings/data
+  must remain intact.
+- Preferences > Information > Version must show the complete branch/time string,
+  wrap long names, and be read-only.
+- Compare with About and Android's installed-app version information.
+- Verify both flavors share the name and code; numeric code must match the UTC
+  build instant's seconds since 2020-01-01.
+- Check existing one-time new-version behavior and that reopening the same
+  installed build does not treat it as newly installed again.
+
+## Limitations and decisions
+
+- `yyyyMMddHHmmss` cannot fit Android's standard integer version code. The chosen
+  epoch-offset scheme retains seconds and reaches the Play limit in 2086.
+- Normal updates reject a lower code, even across branches. Rebuild the desired
+  branch later to obtain a higher code with the same signing key.
+- Codes follow build time, not commit ancestry or completion order, and depend
+  on an accurate clock. Same-second builds can share codes; this does not
+  guarantee unique Play release codes.
+- The 2000 timestamp examples are tested for version-name formatting only:
+  actual builds that early are rejected by the numeric-code lower bound.
+- New title translations use Android's default-resource fallback.
+- CI emitted existing action deprecation and upcoming runner-image migration
+  notices; they did not block validation and were not changed in this task.

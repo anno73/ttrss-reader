@@ -1,0 +1,98 @@
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoUnit
+
+class AppVersion {
+    static final Instant EPOCH = Instant.parse('2020-01-01T00:00:00Z')
+    static final DateTimeFormatter NAME_TIME =
+            DateTimeFormatter.ofPattern('yyyy-MM-dd_HH-mm-ss', Locale.ROOT).withZone(ZoneOffset.UTC)
+
+    static String name(String branch, Instant instant) {
+        if (branch == null || branch.trim().isEmpty() || branch == 'HEAD') {
+            throw new GradleException('Cannot identify source branch; set APP_BUILD_BRANCH for detached checkouts.')
+        }
+        return "${branch.replaceAll('[^A-Za-z0-9._-]', '_')}_${NAME_TIME.format(instant)}"
+    }
+
+    static Map metadata(String branch, String timestamp) {
+        if (timestamp == null || !(timestamp ==~ /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/)) {
+            throw new GradleException('APP_BUILD_TIMESTAMP must be a UTC instant in yyyy-MM-ddTHH:mm:ssZ format.')
+        }
+        Instant instant
+        try {
+            instant = Instant.parse(timestamp)
+        } catch (DateTimeParseException e) {
+            throw new GradleException('Invalid APP_BUILD_TIMESTAMP: ' + timestamp, e)
+        }
+        if (instant.toString() != timestamp) {
+            throw new GradleException('APP_BUILD_TIMESTAMP must be a canonical UTC instant without leap seconds.')
+        }
+        long code = instant.epochSecond - EPOCH.epochSecond
+        if (code <= 1982 || code > 2100000000L) {
+            throw new GradleException('Build version code must be greater than 1982 and at most 2100000000: ' + code)
+        }
+        return [name: name(branch, instant), code: Math.toIntExact(code)]
+    }
+}
+
+String branch = providers.environmentVariable('APP_BUILD_BRANCH').orNull
+if (branch == null) {
+    if (providers.environmentVariable('GITHUB_ACTIONS').orNull == 'true') {
+        branch = providers.environmentVariable('GITHUB_HEAD_REF').orNull
+        if (!branch && providers.environmentVariable('GITHUB_REF_TYPE').orNull == 'branch') {
+            branch = providers.environmentVariable('GITHUB_REF_NAME').orNull
+        }
+    } else {
+        def gitBranch = providers.exec {
+            workingDir rootDir
+            commandLine 'git', 'symbolic-ref', '--quiet', '--short', 'HEAD'
+            ignoreExitValue = true
+        }
+        if (gitBranch.result.get().exitValue == 0) {
+            branch = gitBranch.standardOutput.asText.get().trim()
+        }
+    }
+}
+String timestamp = providers.environmentVariable('APP_BUILD_TIMESTAMP')
+        .getOrElse(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString())
+ext.appVersion = AppVersion.metadata(branch, timestamp)
+
+tasks.register('verifyBuildVersion') {
+    group = 'verification'
+    description = 'Checks branch normalization, UTC formatting and version-code bounds.'
+    doLast {
+        Instant example = Instant.parse('2000-01-01T12:00:00Z')
+        assert AppVersion.name('master', example) == 'master_2000-01-01_12-00-00'
+        assert AppVersion.name('feature/some-feature-branch-name', example) ==
+                'feature_some-feature-branch-name_2000-01-01_12-00-00'
+        assert AppVersion.name('feature/a+b@c.d-e_f', example) ==
+                'feature_a_b_c.d-e_f_2000-01-01_12-00-00'
+        assert AppVersion.name('feature/caf\u00e9', example) ==
+                'feature_caf__2000-01-01_12-00-00'
+        assert AppVersion.name('feature/' + 'a' * 200, example) ==
+                'feature_' + 'a' * 200 + '_2000-01-01_12-00-00'
+        assert AppVersion.metadata('master', '2020-01-01T00:33:03Z').code == 1983
+        assert AppVersion.metadata('master', '2026-01-01T00:00:00Z') ==
+                [name: 'master_2026-01-01_00-00-00', code: 189388800]
+        String maximum = AppVersion.EPOCH.plusSeconds(2100000000L).toString()
+        assert AppVersion.metadata('master', maximum).code == 2100000000
+
+        def reject = { String source, String time ->
+            boolean failed = false
+            try {
+                AppVersion.metadata(source, time)
+            } catch (GradleException expected) {
+                failed = true
+            }
+            assert failed: "Expected rejection for branch=${source}, timestamp=${time}"
+        }
+        [null, '', ' ', 'HEAD'].each { reject(it, '2026-01-01T00:00:00Z') }
+        [null, '', '2026-02-30T00:00:00Z', '2026-01-01T00:00:00+01:00',
+         '2026-01-01T00:00:00.123Z', '2026-01-01T23:59:60Z',
+         '2000-01-01T12:00:00Z', '2020-01-01T00:33:02Z',
+         AppVersion.EPOCH.plusSeconds(2100000001L).toString()].each { reject('master', it) }
+        logger.lifecycle('Build version generation checks passed.')
+    }
+}

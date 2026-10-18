@@ -59,7 +59,8 @@
 - Offset pagination cannot guarantee a snapshot while backend data changes.
 - In-place device installation passed as recorded below. The user confirmed that
   manual page-size/download tests passed and existing settings/data are intact.
-  Explicit merge approval is still required; no merge has been performed.
+  The user explicitly approved merging `feature/configurable-api-page-size` into
+  `master`; merge and merged-build validation are being completed below.
 
 ## Manual checks for the downloaded APK
 1. Confirm Connection settings show default 200 and a numeric keypad. Try 1,
@@ -133,3 +134,5 @@ the local Play APKs from `downloaded-apk/run-39153383913/` and
   are intact**. This validates the feature and data-preserving in-place update on
   the connected Samsung device. It does not establish that the original
   non-ADB installer-verifier rejection is resolved.
+- After that confirmation, the user explicitly selected **Merge into master**.
+  Proceed with the approved merge and verify its GitHub Actions build/artifacts.

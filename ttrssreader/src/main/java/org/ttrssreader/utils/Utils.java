@@ -48,12 +48,8 @@ import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
 import org.ttrssreader.preferences.Constants;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -123,35 +119,9 @@ public class Utils {
 		if (Controller.getInstance().isFirstRun()) {
 			// Set first run to false anyway.
 			Controller.getInstance().setFirstRun(false);
-			// Compatibility for already installed apps that don't have this pref yet:
-			return Constants.LAST_VERSION_RUN_DEFAULT.equals(Controller.getInstance().getLastVersionRun());
-		} else {
-			return false;
-		}
-	}
-
-	/*
-	 * Check if a new version of the app was installed, returns true if this is the case. This also triggers the reset
-	 * of the preference noCrashreportsUntilUpdate since with a new update the crash reporting should now be enabled
-	 * again.
-	 */
-	public static boolean checkIsNewVersion(Context c) {
-		String thisVersion = getAppVersionName(c);
-		String lastVersionRun = Controller.getInstance().getLastVersionRun();
-		Controller.getInstance().setLastVersionRun(thisVersion);
-
-		if (thisVersion.equals(lastVersionRun)) {
-			// No new version installed, perhaps a new version exists
-			// Only run task once for every session and only if we are online
-			if (!checkConnected((ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE)))
-				return false;
-			if (AsyncTask.Status.PENDING.equals(updateVersionTask.getStatus()))
-				updateVersionTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-			return false;
-		} else {
-			// New update was installed, reset noCrashreportsUntilUpdate and return true to display the changelog...
-			Controller.getInstance().setNoCrashreportsUntilUpdate(false);
 			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -380,47 +350,6 @@ public class Utils {
 		Notification notification = buildNotification(context, icon, ticker, title, "…", true, intent, NOTIFICATION_CHANNEL_ID_INFO);
 		mNotMan.notify(ID_RUNNING, notification);
 	}
-
-	/**
-	 * Reads a file from my webserver and parses the content. It containts the version code of the latest supported
-	 * version. If the version of the installed app is lower then this the feature "Send mail with stacktrace on error"
-	 * will be disabled to make sure I only receive "new" Bugreports.
-	 */
-	private static final AsyncTask<Void, Void, Void> updateVersionTask = new AsyncTask<Void, Void, Void>() {
-		@Override
-		protected Void doInBackground(Void... params) {
-			// Check last appVersionCheckDate
-			long last = Controller.getInstance().appVersionCheckTime();
-			if ((System.currentTimeMillis() - last) < (Utils.HOUR * 4))
-				return null;
-
-			if (Controller.getInstance().isNoCrashreports())
-				return null;
-
-			try {
-				URL url = new URL("http://nilsbraden.de/android/tt-rss/minSupportedVersion.txt");
-				HttpURLConnection con = (HttpURLConnection) url.openConnection(Proxy.NO_PROXY);
-				con.connect();
-				int code = con.getResponseCode();
-
-				if (code < 400 || code >= 600) {
-
-					BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
-					String content = br.readLine(); // Just read one line!
-
-					// Only ever read the integer if it matches the regex and is not too long
-					if (content.matches("[0-9]*[\\r\\n]*")) {
-						content = content.replaceAll("[^0-9]*", "");
-						Controller.getInstance().setAppLatestVersion(Integer.parseInt(content));
-					}
-				}
-			} catch (Exception e) {
-				// Empty!
-			}
-
-			return null;
-		}
-	};
 
 	public static Notification buildNotification(Context context, int icon, CharSequence ticker, CharSequence title, CharSequence text, boolean autoCancel, Intent intent, String NOTIFICATION_CHANNEL_ID_INFO) {
 		Notification notification = null;

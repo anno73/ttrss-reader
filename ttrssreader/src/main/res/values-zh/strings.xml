@@ -28,9 +28,6 @@
     <string name="CacheFolderMaxSizeTitle">缓存文件上限</string>
     <string name="CategoryActivity_NoServer">未指定服务器地址</string>
     <string name="CategoryActivity_Donate">捐赠</string>
-    <string name="Changelog_Prefix"><![CDATA[请访问项目主页 <a href="%s">github.com</a> 查看完整的更新日志。]]></string>
-    <string name="Changelog_Title">更新日志</string>
-    <string name="Changelog_Suffix"><![CDATA[更早之前的更新日志已经被省略，要查看完整的更新日志，请访问项目主页 <a href="%s">github.com</a>。]]></string>
     <string name="Close">关闭</string>
     <string name="Commons_AddArticleLabel">添加标签</string>
     <string name="Commons_DisplayAll">所有文章</string>
@@ -152,7 +149,6 @@
     <string name="Main_ShowPreferencesMenu">偏好设置</string>
     <string name="MiscellaneousPreferenceCategoryTitle">其他偏好</string>
     <string name="No">取消</string>
-    <string name="NoCrashreportsTitle">禁用崩溃报告</string>
     <string name="OnlyUseWifiTitle">只在Wi-Fi网络下连接</string>
     <string name="Preferences_Btn">偏好设置</string>
     <string name="Preferences_Reset">重置偏好设置</string>
@@ -217,9 +213,6 @@
     <string name="WhiteTheme">白色主题</string>
     <string name="Welcome_Message">欢迎使用TTRSS-Reader！请注意，要使用此应用，你必须要有“Tiny Tiny RSS”服务器。如果这是你第一次启动TTRSS-Reader，你应该先配置服务器地址和帐号信息。点击“偏好设置”以继续。</string>
     <string name="OnlyUseWifiSummary">如果勾选，此应用将在你的设备连接到特定Wi-Fi网络时，才会连接服务器</string>
-    <string name="NoCrashreportsUntilUpdateTitle">在下次更新前禁用崩溃报告</string>
-    <string name="NoCrashreportsUntilUpdateSummary">禁用崩溃报告，直到此应用的新版本被安装。未经你的许可将不会发送任何数据，我只是打开邮件应用，在邮件发送前，你可以检查所有将要发送的数据，请知悉</string>
-    <string name="NoCrashreportsSummary">完全禁用崩溃报告功能。请注意：为了限制缺陷报告数量，我在自己的网络空间上准备了一个文件，其大小被限制在5个字节以内。如果缺陷报告是开启的话，这个文件会每天更新一次。除了这个机制外，未经你的许可将不会发送任何数据，我只是打开邮件应用，在邮件发送前，你可以检查所有将要发送的数据</string>
     <string name="ConnectionSslPreferenceCategoryTitle">SSL设置</string>
     <string name="ConnectionProviderInstallTitle">使用ProviderInstaller服务</string>
     <string name="ConnectionHttpPasswordPreferenceSummary">基于HTTP认证方式的密码</string>

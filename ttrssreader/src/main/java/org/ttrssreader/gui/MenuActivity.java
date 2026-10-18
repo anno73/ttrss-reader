@@ -59,7 +59,6 @@ import org.ttrssreader.model.updaters.Updater;
 import org.ttrssreader.preferences.Constants;
 import org.ttrssreader.preferences.PreferencesActivity;
 import org.ttrssreader.utils.AsyncTask;
-import org.ttrssreader.utils.PostMortemReportExceptionHandler;
 import org.ttrssreader.utils.Utils;
 
 import java.lang.reflect.Field;
@@ -83,8 +82,6 @@ import static org.ttrssreader.controllers.Controller.isTablet;
 public abstract class MenuActivity extends MenuFlavorActivity implements IUpdateEndListener, ICacheEndListener, IItemSelectedListener, IDataChangedListener {
 
 	private static final String TAG = MenuActivity.class.getSimpleName();
-
-	private PostMortemReportExceptionHandler mDamageReport = new PostMortemReportExceptionHandler(this);
 
 	protected MenuActivity activity;
 	protected volatile boolean mOnSaveInstanceStateCalled = false;
@@ -112,7 +109,6 @@ public abstract class MenuActivity extends MenuFlavorActivity implements IUpdate
 		Controller.getInstance().initializeThemeMode();
 
 		super.onCreate(instance);
-		mDamageReport.initialize();
 		activity = this;
 
 		try {
@@ -302,8 +298,6 @@ public abstract class MenuActivity extends MenuFlavorActivity implements IUpdate
 
 	@Override
 	protected void onDestroy() {
-		mDamageReport.restoreOriginalHandler();
-		mDamageReport = null;
 		super.onDestroy();
 		if (updater != null) {
 			updater.cancel(true);

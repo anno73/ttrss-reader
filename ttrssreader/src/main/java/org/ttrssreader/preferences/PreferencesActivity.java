@@ -26,7 +26,6 @@ import org.ttrssreader.controllers.Controller;
 import org.ttrssreader.gui.MenuFlavorActivity;
 import org.ttrssreader.preferences.fragments.PreferencesFragment;
 import org.ttrssreader.utils.AsyncTask;
-import org.ttrssreader.utils.PostMortemReportExceptionHandler;
 import org.ttrssreader.utils.Utils;
 
 import androidx.activity.OnBackPressedCallback;
@@ -49,8 +48,6 @@ public class PreferencesActivity extends MenuFlavorActivity implements Preferenc
 	private static AsyncTask<Void, Void, Void> init;
 	//	private static final String TITLE_TAG = "settingsActivityTitle";
 
-	private PostMortemReportExceptionHandler mDamageReport = new PostMortemReportExceptionHandler(this);
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -60,7 +57,6 @@ public class PreferencesActivity extends MenuFlavorActivity implements Preferenc
 		setContentView(R.layout.preferences);
 
 		setResult(Constants.ACTIVITY_SHOW_PREFERENCES);
-		mDamageReport.initialize();
 
 		if (savedInstanceState == null) {
 			FragmentManager fm = getSupportFragmentManager();
@@ -133,13 +129,6 @@ public class PreferencesActivity extends MenuFlavorActivity implements Preferenc
 			new BackupManager(this).dataChanged();
 			Controller.getInstance().setPreferencesChanged(false);
 		}
-	}
-
-	@Override
-	protected void onDestroy() {
-		mDamageReport.restoreOriginalHandler();
-		mDamageReport = null;
-		super.onDestroy();
 	}
 
 	@Override

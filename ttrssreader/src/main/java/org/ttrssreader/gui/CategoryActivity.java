@@ -30,7 +30,6 @@ import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
 import org.ttrssreader.controllers.DBHelper;
 import org.ttrssreader.controllers.Data;
-import org.ttrssreader.gui.dialogs.ChangelogDialog;
 import org.ttrssreader.gui.dialogs.WelcomeDialog;
 import org.ttrssreader.gui.fragments.CategoryListFragment;
 import org.ttrssreader.gui.fragments.FeedHeadlineListFragment;
@@ -55,7 +54,6 @@ public class CategoryActivity extends MenuActivity implements IItemSelectedListe
 	private static final String TAG = CategoryActivity.class.getSimpleName();
 
 	private static final String DIALOG_WELCOME = "welcome";
-	private static final String DIALOG_UPDATE = "update";
 
 	private static final int SELECTED_VIRTUAL_CATEGORY = 1;
 	private static final int SELECTED_CATEGORY = 2;
@@ -93,8 +91,6 @@ public class CategoryActivity extends MenuActivity implements IItemSelectedListe
 
 		if (Utils.checkIsFirstRun()) {
 			WelcomeDialog.getInstance().show(fm, DIALOG_WELCOME);
-		} else if (Utils.checkIsNewVersion(this)) {
-			ChangelogDialog.getInstance().show(fm, DIALOG_UPDATE);
 		} else if (Utils.checkIsConfigInvalid()) {
 			// Check if we have a server specified
 			openConnectionErrorDialog((String) getText(R.string.CategoryActivity_NoServer));

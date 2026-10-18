@@ -73,23 +73,6 @@
 </html>]]>
 	</string>
 
-    <!-- CHANGELOG TEMPLATE -->
-    <string name="HTML_TEMPLATE_CHANGELOG" formatted="false" translatable="false">
-<![CDATA[
-<!DOCTYPE html>
-<head>
-	<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />
-	$STYLE$
-</head>
-<body id=\"$THEME$\"></body>
-	<div id=\"content\">
-		<h1>$TITLE$</h1>
-		$CONTENT$
-	</div>
-</html>]]>
-	</string>
-
-
     <!-- CSS -->
     <string name="STYLE_TEMPLATE" formatted="false" translatable="false">
 <![CDATA[

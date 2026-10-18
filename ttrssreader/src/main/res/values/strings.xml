@@ -43,12 +43,8 @@
     <string name="Preferences_ResetCache_YesNoMsg">Delete ImageCache?</string>
     <string name="Preferences_ResetCache_Done">ImageCache has been reset.</string>
     <string name="Preferences_Btn">Preferences</string>
-    <string name="Changelog_Title">Changelog</string>
-    <string name="Changelog_Prefix"><![CDATA[For the full Changelog please visit the project page on <a href="%s">github.com</a>.]]></string>
-    <string name="Changelog_Suffix"><![CDATA[All older entries are omitted here for. For the full Changelog please visit the project page on <a href="%s">github.com</a>.]]></string>
     <string name="DonateUrl" translatable="false">https://github.com/nilsbraden/ttrss-reader-fork/wiki/Donations</string>
     <string name="ProjectUrl" translatable="false">https://github.com/nilsbraden/ttrss-reader-fork</string>
-    <string name="ChangelogUrl" translatable="false">https://github.com/nilsbraden/ttrss-reader-fork/wiki/Changelog</string>
     <string name="Welcome_Title">Welcome</string>
     <string name="Welcome_Message">Welcome to TTRSS-Reader!\n\nPlease note that this Reader only works with a \"Tiny Tiny RSS\" Server.\n\nIf this is the first time you started TTRSS-Reader you should set your Serverlocation and User-Settings. Press "Preferences" to proceed.</string>
     <string name="AboutActivity_Title">About</string>
@@ -276,10 +272,6 @@
     <string name="DeleteDBOnNextStartupSummary">If set to true the internal database will be deleted only on the next start of the application.</string>
     <string name="OnlyUseWifiTitle">Only connect on WIFI</string>
     <string name="OnlyUseWifiSummary">When enabled the app will only connect to the server when the device is in a WIFI network.</string>
-    <string name="NoCrashreportsTitle">Disable crash reports</string>
-    <string name="NoCrashreportsSummary">Completely disables the reporting functionality. Please note: To make the amount of bugreports bearable for me I provide a file with the currently supported version information on private websapce which is retrieved regularly. Apart from this mechanism no data is transferred without your explicit consent.</string>
-    <string name="NoCrashreportsUntilUpdateTitle">Disable crash reports until next update</string>
-    <string name="NoCrashreportsUntilUpdateSummary">Disables crash reporting until the next update of the app is installed. Please note that in NO case any data is transferred without your consent anyway, I just open the mail app and you can review any transmitted data before sending the mail.</string>
     <string name="ConnectionWifiPrefEnableTitle">Enable settings for this network?</string>
     <string name="ConnectionWifiPrefEnabledSummary">Preferences for this Wifi network are enabled.</string>
     <string name="ConnectionWifiPrefDisbledSummary">Preferences for this Wifi network are disabled.</string>

@@ -41,17 +41,32 @@ display, first-install welcome, server validation, feed syncing and APK signing.
 - Whitespace review uses `git -c core.whitespace=cr-at-eol diff --check` because
   existing Java/XML/README files are stored with CRLF line endings.
 - No local compilation, Gradle tasks or unit tests were run.
-- GitHub Actions compilation, tests, APK verification and artifact download:
-  pending the implementation commit/push.
+- Implementation commit: `8398c7fcd99e09383976bd0e1eefc2c4fefda008`,
+  pushed and verified against the task branch's GitHub upstream.
+- [Android CI run 39164673421](https://github.com/anno73/ttrss-reader/actions/runs/39164673421)
+  completed successfully for that commit. Both `build` and `ttrss-skill` passed.
+- CI executed build-version verification, existing network/media unit tests and
+  `StartupBehaviorTest`; the unit-test Gradle invocation completed successfully.
+- Both debug flavors built successfully. CI verified their package/provider
+  identity, generated versions and persistent signing identity.
+- Artifact `12150336106` (`ttrss-reader-debug`) downloaded successfully. Its ZIP
+  SHA-256 matches GitHub's artifact digest:
+  `01965935699cd27457e5708f28789dbb503164530fb228ce90b35fdd1278beb7`.
+- Verified files, with original archive paths preserved:
+  - `downloaded-apk/run-39164673421/ttrss-reader-debug.zip` (21,268,156 bytes).
+  - `downloaded-apk/run-39164673421/ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk`
+    (11,994,783 bytes).
+  - `downloaded-apk/run-39164673421/ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk`
+    (12,520,220 bytes).
+- The only CI annotation was an existing checkout-action Node.js deprecation
+  notice; it did not prevent validation or artifact publication.
 
 ## Delivery and acceptance
 
-- Commit and push all task files, excluding unrelated changes and build outputs.
-- Verify `.github/workflows/android-build.yml` succeeds for the implementation.
-- Retain `downloaded-apk/run-{RUN-ID}/ttrss-reader-debug.zip`; extract directly
-  into that directory and verify both original flavor APK paths.
-- Update this plan with the actual CI run, tests and artifact results, commit
-  the validation record, and verify the final upstream push.
+- All implementation files and this executed plan are committed on the task
+  branch. APKs and the ZIP are Git-ignored; `TODO.md` remains untouched.
+- This validation record is delivered in a separate documentation-only
+  `[skip ci]` commit; the tested application/workflow code remains unchanged.
 - Manual tests are pending: upgrade and reopen without release notes; fresh
   install welcome once; invalid-server handling; feed sync; version display;
   Preferences without crash-report settings; external project links.

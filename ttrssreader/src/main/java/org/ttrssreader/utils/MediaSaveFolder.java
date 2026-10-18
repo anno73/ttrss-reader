@@ -184,11 +184,15 @@ public final class MediaSaveFolder {
 	}
 
 	private static String joinPath(String rootTitle, List<String> parts, String fallback) {
-		List<String> visibleParts = new ArrayList<>();
+		StringBuilder path = new StringBuilder();
 		if (rootTitle != null && !rootTitle.isEmpty())
-			visibleParts.add(rootTitle);
-		visibleParts.addAll(parts);
-		return visibleParts.isEmpty() ? fallback : String.join("/", visibleParts);
+			path.append(rootTitle);
+		for (String part : parts) {
+			if (path.length() > 0)
+				path.append('/');
+			path.append(part);
+		}
+		return path.length() == 0 ? fallback : path.toString();
 	}
 
 	private static final class RootInfo {

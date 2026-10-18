@@ -40,7 +40,9 @@ repository home; feedback goes to its Issues page.
 
 ## Manual acceptance and merge gate
 
-Please verify the project and feedback entries in the app's Preferences menu
-open the repository home and Issues page, respectively. Do not merge this
-branch unless manual acceptance has passed and the user explicitly approves
-the merge.
+Installed the Play debug APK on the connected SM-S928B using `adb install -r`.
+The user manually verified both Preferences menu links open the expected
+repository home and Issues page.
+
+Manual acceptance passed. Do not merge this branch until the user explicitly
+approves the merge.

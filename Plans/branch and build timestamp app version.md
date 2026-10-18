@@ -28,9 +28,12 @@
    calculated expectations. Existing unit tests and identity/signing checks remain.
 5. Documented format, inputs, UTC, code limits and update behavior in the
    [README](../README.md).
-6. Remaining execution: commit/push, verify CI, download and verify artifacts,
-   record results here, and request manual testing. No merge until manual tests
-   pass and the user explicitly approves it.
+6. Committed implementation as `ff91faeb` with the required co-author trailer and
+   pushed the task branch to its upstream. Verified the successful CI run belongs
+   to that exact commit, downloaded the artifact and verified the required layout.
+   This execution record is committed separately; its push also triggers Android
+   CI and must be verified before handoff. No merge until manual tests pass and
+   the user explicitly approves it.
 
 ## Validation
 
@@ -40,7 +43,25 @@
   non-ASCII and long branch names, epoch conversion, the maximum accepted code,
   missing branches, malformed dates, fractional/non-UTC timestamps, leap seconds,
   and lower/upper range rejection.
-- CI run and artifact verification: pending.
+- [Android CI run 39142484414](https://github.com/anno73/ttrss-reader/actions/runs/39142484414):
+  **passed** for `ff91faeb8074da106aae761c877dc635a4e03dc6`.
+- Generator verification and existing timeout/media unit tests passed. Both
+  F-Droid and Play debug APKs built successfully; exact packaged version,
+  package/provider identity and persistent signing checks passed for each.
+- Both packaged version names:
+  `feature_branch-build-version_2026-10-18_15-53-09`.
+- Both numeric version codes: `214501989`.
+- Download verified (nonempty ZIP and both extracted APKs):
+  - [Retained ZIP](../downloaded-apk/run-39142484414/ttrss-reader-debug.zip)
+    (21,296,039 bytes).
+  - [F-Droid APK](../downloaded-apk/run-39142484414/ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk)
+    (12,022,870 bytes).
+  - [Play APK](../downloaded-apk/run-39142484414/ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk)
+    (12,548,243 bytes).
+- ZIP paths were preserved directly under `downloaded-apk/run-39142484414/`,
+  without flattening or an extra artifact-name directory. Downloads are ignored
+  by Git, not committed.
+- No local compilation, Gradle tasks or tests were run.
 - Manual Android tests: pending.
 
 ## Manual acceptance
@@ -67,3 +88,5 @@
 - The 2000 timestamp examples are tested for version-name formatting only:
   actual builds that early are rejected by the numeric-code lower bound.
 - New title translations use Android's default-resource fallback.
+- CI emitted existing action deprecation and upcoming runner-image migration
+  notices; they did not block validation and were not changed in this task.

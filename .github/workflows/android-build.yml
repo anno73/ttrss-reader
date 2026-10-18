@@ -27,6 +27,29 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Define build version
+        env:
+          SOURCE_BRANCH: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name) || '' }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$SOURCE_BRANCH" ]]; then
+            echo "::error::Cannot identify source branch."
+            exit 1
+          fi
+          timestamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          normalized=$(printf '%s' "$SOURCE_BRANCH" | LC_ALL=C.UTF-8 sed 's/[^A-Za-z0-9._-]/_/g')
+          version_name="${normalized}_$(date -u -d "$timestamp" +'%Y-%m-%d_%H-%M-%S')"
+          version_code=$(( $(date -u -d "$timestamp" +%s) - 1577836800 ))
+          if (( version_code <= 1982 || version_code > 2100000000 )); then
+            echo "::error::Build version code is outside the supported range: $version_code"
+            exit 1
+          fi
+          echo "APP_BUILD_BRANCH=$SOURCE_BRANCH" >> "$GITHUB_ENV"
+          echo "APP_BUILD_TIMESTAMP=$timestamp" >> "$GITHUB_ENV"
+          echo "EXPECTED_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
+          echo "EXPECTED_VERSION_CODE=$version_code" >> "$GITHUB_ENV"
+          echo "Build version: $version_name ($version_code)"
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -77,11 +100,11 @@ jobs:
           echo "sha256=$fingerprint" >> "$GITHUB_OUTPUT"
           echo "available=true" >> "$GITHUB_OUTPUT"
 
-      - name: Test timeout diagnostics and media saving
+      - name: Test version generation, timeout diagnostics and media saving
         env:
           ORG_GRADLE_PROJECT_localePluginMavenUser: ${{ secrets.LOCALE_PLUGIN_MAVEN_USER }}
           ORG_GRADLE_PROJECT_localePluginMavenPassword: ${{ secrets.LOCALE_PLUGIN_MAVEN_PASSWORD }}
-        run: ./gradlew --no-daemon :ttrssreader:testFdroidDebugUnitTest --tests 'org.ttrssreader.net.*Test' --tests 'org.ttrssreader.utils.MediaSaveFolderTest'
+        run: ./gradlew --no-daemon :ttrssreader:verifyBuildVersion :ttrssreader:testFdroidDebugUnitTest --tests 'org.ttrssreader.net.*Test' --tests 'org.ttrssreader.utils.MediaSaveFolderTest'
 
       - name: Build debug APK
         if: steps.signing.outputs.available == 'true'
@@ -90,7 +113,7 @@ jobs:
           ORG_GRADLE_PROJECT_localePluginMavenPassword: ${{ secrets.LOCALE_PLUGIN_MAVEN_PASSWORD }}
         run: ./gradlew --no-daemon :ttrssreader:signingReport assembleDebug
 
-      - name: Verify APK package and provider identity
+      - name: Verify APK version, package and provider identity
         if: steps.signing.outputs.available == 'true'
         run: |
           set -euo pipefail
@@ -98,6 +121,13 @@ jobs:
           for flavor in fdroid play; do
             apk="ttrssreader/build/outputs/apk/$flavor/debug/ttrssreader-$flavor-debug.apk"
             badging=$("$aapt2" dump badging "$apk")
+            actual_name=$(sed -n "s/^package: .*versionName='\([^']*\)'.*/\1/p" <<< "$badging")
+            actual_code=$(sed -n "s/^package: .*versionCode='\([^']*\)'.*/\1/p" <<< "$badging")
+            if [[ "$actual_name" != "$EXPECTED_VERSION_NAME" || "$actual_code" != "$EXPECTED_VERSION_CODE" ]]; then
+              echo "::error::Unexpected version in $apk: $actual_name ($actual_code)"
+              exit 1
+            fi
+            echo "$flavor APK version verified: $actual_name ($actual_code)"
             if ! grep -q "^package: name='org\.ttrssreader\.anno73' " <<< "$badging"; then
               echo "::error::Unexpected package ID in $apk"
               exit 1

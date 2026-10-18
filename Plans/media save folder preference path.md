@@ -9,8 +9,9 @@
 
 ## Implementation
 
-- Use `DocumentsContract.findDocumentPath` and provider root metadata to render the visible root title and ancestor display names on supported Android versions.
-- For older Android versions, reconstruct External Storage Provider paths from the provider's volume-relative document ID and root title.
+- Use `DocumentsContract.findDocumentPath` to render ancestor display names for providers that expose document ancestry.
+- For the External Storage Provider, reconstruct the relative path from the tree document ID and obtain the visible volume title from Android storage-volume metadata.
+- Do not query provider-global root metadata: the persisted SAF grant covers the selected tree, not the provider's `/root` listing.
 - For the standard External Storage Provider, prefer the tree document ID path even on newer Android versions; a non-null but incomplete `findDocumentPath` result must not prevent that reconstruction.
 - Preserve the selected folder's display name as a fallback when a provider does not expose ancestry.
 - Use the same path formatter in the media-saved confirmation.
@@ -38,3 +39,10 @@
 - GitHub Actions run `39135425337` passed the regression and existing unit tests, both APK builds, package/provider identity checks, and signing verification.
 - Downloaded the run's artifact to `downloaded-apk/run-39135425337/ttrss-reader-debug.zip`, extracted it into the same directory, and verified SHA-256 `5a90b2e7c7baae7e58ec5a9a9f6703c4427d1fb9330c6fe3f8ae0bcebefc4860`. Confirmed the fdroid and play APKs exist under `ttrssreader/build/outputs/apk/{fdroid,play}/debug/`.
 - Manual device testing remains outstanding. Install this updated APK and confirm the preference shows the full visible path, e.g. `Internal storage/Pictures/ttrss`, and wraps long paths. Do not merge before successful manual tests and explicit user approval.
+
+## Permission-denial follow-up
+
+- The user reported that the preference now surfaced a `SecurityException` for `content://com.android.externalstorage.documents/root`. The formatter queried this provider-global root endpoint to obtain the root title, which is not covered by a persisted tree grant.
+- Removed root-table lookups. External-storage volume labels now come from `StorageManager`/`StorageVolume`; selected-tree-relative folder components continue to come from the tree URI's document ID. For other document providers, the root entry is omitted and the authorized ancestry entries are formatted without querying global roots.
+- Added regression coverage for the external-storage title and path, and assertions that neither external-storage nor generic providers are queried for root listings.
+- Validate this follow-up only through `.github/workflows/android-build.yml`; do not run Android builds or tests locally.

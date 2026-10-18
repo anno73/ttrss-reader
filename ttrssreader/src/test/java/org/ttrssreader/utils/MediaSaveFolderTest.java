@@ -6,8 +6,11 @@ import android.content.Intent;
 import android.content.UriPermission;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
@@ -86,60 +89,47 @@ public class MediaSaveFolderTest {
 	}
 
 	@Test
-	public void displaysPickerRootAndCompleteDocumentPath() throws Exception {
-		Uri roots = mock(Uri.class);
+	public void displaysCompleteDocumentPathWithoutQueryingRoots() throws Exception {
 		Uri pictures = mock(Uri.class);
-		Cursor rootListing = mock(Cursor.class);
 		Cursor picturesMetadata = mock(Cursor.class);
 		DocumentsContract.Path path = mock(DocumentsContract.Path.class);
 		when(tree.getAuthority()).thenReturn("provider");
 		when(metadata.getString(0)).thenReturn("ttrss");
-		when(path.getRootId()).thenReturn("volume-id");
 		when(path.getPath()).thenReturn(Arrays.asList("root-document", "pictures-document", "folder-document"));
-		documents.when(() -> DocumentsContract.buildRootsUri("provider")).thenReturn(roots);
 		documents.when(() -> DocumentsContract.buildDocumentUriUsingTree(tree, "pictures-document"))
 				.thenReturn(pictures);
 		documents.when(() -> DocumentsContract.buildDocumentUriUsingTree(tree, "folder-document"))
 				.thenReturn(folder);
-		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_ROOT_ID)).thenReturn(0);
-		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_TITLE)).thenReturn(1);
-		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_DOCUMENT_ID)).thenReturn(2);
-		when(rootListing.moveToNext()).thenReturn(true, false);
-		when(rootListing.getString(0)).thenReturn("volume-id");
-		when(rootListing.getString(1)).thenReturn("External storage");
-		when(rootListing.getString(2)).thenReturn("root-document");
 		when(picturesMetadata.moveToFirst()).thenReturn(true);
 		when(picturesMetadata.getString(0)).thenReturn("Pictures");
-		when(resolver.query(eq(roots), any(String[].class), isNull(), isNull(), isNull())).thenReturn(rootListing);
 		when(resolver.query(eq(pictures), any(String[].class), isNull(), isNull(), isNull()))
 				.thenReturn(picturesMetadata);
 
-		assertEquals("External storage/Pictures/ttrss",
+		assertEquals("Pictures/ttrss",
 				MediaSaveFolder.displayPath(context, tree, path, "ttrss"));
+		documents.verify(() -> DocumentsContract.buildRootsUri("provider"), never());
 	}
 
 	@Test
 	public void displayPathUsesExternalStorageRootTitleAndRelativePath() throws Exception {
-		Uri roots = mock(Uri.class);
-		Cursor rootListing = mock(Cursor.class);
+		StorageManager storageManager = mock(StorageManager.class);
+		StorageVolume volume = mock(StorageVolume.class);
 		when(tree.getAuthority()).thenReturn("com.android.externalstorage.documents");
 		when(metadata.getString(0)).thenReturn("ttrss");
 		documents.when(() -> DocumentsContract.getTreeDocumentId(tree)).thenReturn("primary:Pictures/ttrss");
 		documents.when(() -> DocumentsContract.buildDocumentUriUsingTree(tree, "primary:Pictures/ttrss"))
 				.thenReturn(folder);
-		documents.when(() -> DocumentsContract.buildRootsUri("com.android.externalstorage.documents"))
-				.thenReturn(roots);
-		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_ROOT_ID)).thenReturn(0);
-		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_TITLE)).thenReturn(1);
-		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_DOCUMENT_ID)).thenReturn(2);
-		when(rootListing.moveToNext()).thenReturn(true, false);
-		when(rootListing.getString(0)).thenReturn("primary");
-		when(rootListing.getString(1)).thenReturn("Internal storage");
-		when(rootListing.getString(2)).thenReturn("primary:");
-		when(resolver.query(eq(roots), any(String[].class), isNull(), isNull(), isNull())).thenReturn(rootListing);
+		when(context.getSystemService(Context.STORAGE_SERVICE)).thenReturn(storageManager);
+		when(storageManager.getStorageVolumes()).thenReturn(Collections.singletonList(volume));
+		when(volume.isPrimary()).thenReturn(true);
+		when(volume.getDescription(context)).thenReturn("Internal storage");
 
-		assertEquals("Internal storage/Pictures/ttrss", MediaSaveFolder.displayPath(context, tree));
+		assertEquals("Internal storage", MediaSaveFolder.storageVolumeTitle(context, "primary"));
+		String expectedPath = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+				? "Internal storage/Pictures/ttrss" : "Pictures/ttrss";
+		assertEquals(expectedPath, MediaSaveFolder.displayPath(context, tree));
 		documents.verify(() -> DocumentsContract.findDocumentPath(resolver, folder), never());
+		documents.verify(() -> DocumentsContract.buildRootsUri("com.android.externalstorage.documents"), never());
 	}
 
 	@Test

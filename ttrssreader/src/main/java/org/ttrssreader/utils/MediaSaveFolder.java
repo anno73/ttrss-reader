@@ -7,6 +7,8 @@ import android.content.UriPermission;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -124,20 +126,18 @@ public final class MediaSaveFolder {
 
 	static String displayPath(Context context, Uri tree, DocumentsContract.Path path,
 							  String selectedName) throws IOException {
-		ContentResolver resolver = context.getContentResolver();
-		RootInfo root = rootInfo(resolver, tree.getAuthority(), path.getRootId());
 		List<String> parts = new ArrayList<>();
 		List<String> documentIds = path.getPath();
 		if (documentIds == null)
-			return joinPath(root == null ? null : root.title, parts, selectedName);
-		for (String documentId : documentIds) {
+			return joinPath(null, parts, selectedName);
+		// The first path entry is the provider root, outside the selected tree's granted scope.
+		for (int i = 1; i < documentIds.size(); i++) {
+			String documentId = documentIds.get(i);
 			if (documentId == null || documentId.isEmpty())
 				continue;
-			if (root == null || !documentId.equals(root.documentId))
-				parts.add(documentName(context,
-						DocumentsContract.buildDocumentUriUsingTree(tree, documentId)));
+			parts.add(documentName(context, DocumentsContract.buildDocumentUriUsingTree(tree, documentId)));
 		}
-		return joinPath(root == null ? null : root.title, parts, selectedName);
+		return joinPath(null, parts, selectedName);
 	}
 
 	static String externalStoragePath(Context context, Uri tree, String selectedName) throws IOException {
@@ -158,30 +158,21 @@ public final class MediaSaveFolder {
 			if (!part.isEmpty())
 				parts.add(part);
 		}
-		RootInfo root = rootInfo(context.getContentResolver(), tree.getAuthority(), volumeId);
-		return joinPath(root == null ? null : root.title, parts, selectedName);
+		String rootTitle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+				? storageVolumeTitle(context, volumeId) : null;
+		return joinPath(rootTitle, parts, selectedName);
 	}
 
-	private static RootInfo rootInfo(ContentResolver resolver, String authority, String rootId) throws IOException {
-		if (authority == null || rootId == null)
+	static String storageVolumeTitle(Context context, String volumeId) {
+		StorageManager storageManager = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
+		if (storageManager == null)
 			return null;
-		Uri roots = DocumentsContract.buildRootsUri(authority);
-		try (Cursor cursor = resolver.query(roots, new String[]{DocumentsContract.Root.COLUMN_ROOT_ID,
-				DocumentsContract.Root.COLUMN_TITLE, DocumentsContract.Root.COLUMN_DOCUMENT_ID},
-				null, null, null)) {
-			if (cursor == null)
-				return null;
-			int rootIdColumn = cursor.getColumnIndex(DocumentsContract.Root.COLUMN_ROOT_ID);
-			int titleColumn = cursor.getColumnIndex(DocumentsContract.Root.COLUMN_TITLE);
-			int documentIdColumn = cursor.getColumnIndex(DocumentsContract.Root.COLUMN_DOCUMENT_ID);
-			if (rootIdColumn < 0 || titleColumn < 0 || documentIdColumn < 0)
-				return null;
-			while (cursor.moveToNext()) {
-				if (rootId.equals(cursor.getString(rootIdColumn))) {
-					String title = cursor.getString(titleColumn);
-					String documentId = cursor.getString(documentIdColumn);
-					return new RootInfo(title == null || title.isEmpty() ? null : title, documentId);
-				}
+		for (StorageVolume volume : storageManager.getStorageVolumes()) {
+			boolean matches = "primary".equalsIgnoreCase(volumeId)
+					? volume.isPrimary() : volumeId.equalsIgnoreCase(volume.getUuid());
+			if (matches) {
+				String description = volume.getDescription(context);
+				return description == null || description.isEmpty() ? null : description;
 			}
 		}
 		return null;
@@ -197,16 +188,6 @@ public final class MediaSaveFolder {
 			path.append(part);
 		}
 		return path.length() == 0 ? fallback : path.toString();
-	}
-
-	private static final class RootInfo {
-		private final String title;
-		private final String documentId;
-
-		private RootInfo(String title, String documentId) {
-			this.title = title;
-			this.documentId = documentId;
-		}
 	}
 
 	private static String documentName(Context context, Uri document) throws IOException {

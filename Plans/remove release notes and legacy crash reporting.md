@@ -67,8 +67,12 @@ display, first-install welcome, server validation, feed syncing and APK signing.
   branch. APKs and the ZIP are Git-ignored; `TODO.md` remains untouched.
 - This validation record is delivered in a separate documentation-only
   `[skip ci]` commit; the tested application/workflow code remains unchanged.
-- Manual tests are pending: upgrade and reopen without release notes; fresh
-  install welcome once; invalid-server handling; feed sync; version display;
-  Preferences without crash-report settings; external project links.
-- Do not merge to `master` until the user reports successful manual tests and
-  explicitly approves merging.
+- Installed the Play APK with `adb install -r` on the connected Samsung SM-S928B,
+  preserving app data. Verified installed version
+  `remove-release-notes-and-crash-reporting_2026-10-18_20-44-28`
+  (`versionCode` 214519468).
+- The user reported manual tests passed after being asked to check upgrade and
+  reopening without release notes, feed syncing and absent crash-report settings.
+  Fresh-install and other scenarios were covered by CI where applicable; no
+  separate device result was recorded for those scenarios.
+- The user explicitly approved merging this branch into `master`.

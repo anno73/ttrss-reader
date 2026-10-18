@@ -119,10 +119,11 @@ public class MediaSaveFolderTest {
 	}
 
 	@Test
-	public void externalStoragePathUsesPickerRootAndFoldersInsteadOfRawVolumeId() throws Exception {
+	public void displayPathUsesExternalStorageRootTitleAndRelativePath() throws Exception {
 		Uri roots = mock(Uri.class);
 		Cursor rootListing = mock(Cursor.class);
 		when(tree.getAuthority()).thenReturn("com.android.externalstorage.documents");
+		when(metadata.getString(0)).thenReturn("ttrss");
 		documents.when(() -> DocumentsContract.getTreeDocumentId(tree)).thenReturn("primary:Pictures/ttrss");
 		documents.when(() -> DocumentsContract.buildRootsUri("com.android.externalstorage.documents"))
 				.thenReturn(roots);
@@ -135,8 +136,8 @@ public class MediaSaveFolderTest {
 		when(rootListing.getString(2)).thenReturn("primary:");
 		when(resolver.query(eq(roots), any(String[].class), isNull(), isNull(), isNull())).thenReturn(rootListing);
 
-		assertEquals("Internal storage/Pictures/ttrss",
-				MediaSaveFolder.externalStoragePath(context, tree, "ttrss"));
+		assertEquals("Internal storage/Pictures/ttrss", MediaSaveFolder.displayPath(context, tree));
+		documents.verify(() -> DocumentsContract.findDocumentPath(resolver, folder), never());
 	}
 
 	@Test

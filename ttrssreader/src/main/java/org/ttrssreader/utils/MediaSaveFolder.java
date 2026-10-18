@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 
 public final class MediaSaveFolder {
 	private static final String TAG = MediaSaveFolder.class.getSimpleName();
+	private static final String EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents";
 	private static final int GRANTS = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
 	private static final Pattern CONTENT_DISPOSITION_FILENAME =
 			Pattern.compile("(?:^|;)\\s*filename\\*?\\s*=", Pattern.CASE_INSENSITIVE);
@@ -105,6 +106,9 @@ public final class MediaSaveFolder {
 	public static String displayPath(Context context, Uri tree) throws IOException {
 		Uri document = documentUri(tree);
 		String selectedName = documentName(context, document);
+		if (EXTERNAL_STORAGE_AUTHORITY.equals(tree.getAuthority()))
+			return externalStoragePath(context, tree, selectedName);
+
 		ContentResolver resolver = context.getContentResolver();
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			try {
@@ -137,7 +141,7 @@ public final class MediaSaveFolder {
 	}
 
 	static String externalStoragePath(Context context, Uri tree, String selectedName) throws IOException {
-		if (!"com.android.externalstorage.documents".equals(tree.getAuthority()))
+		if (!EXTERNAL_STORAGE_AUTHORITY.equals(tree.getAuthority()))
 			return selectedName;
 
 		String documentId = DocumentsContract.getTreeDocumentId(tree);

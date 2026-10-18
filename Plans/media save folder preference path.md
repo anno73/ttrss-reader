@@ -11,6 +11,7 @@
 
 - Use `DocumentsContract.findDocumentPath` and provider root metadata to render the visible root title and ancestor display names on supported Android versions.
 - For older Android versions, reconstruct External Storage Provider paths from the provider's volume-relative document ID and root title.
+- For the standard External Storage Provider, prefer the tree document ID path even on newer Android versions; a non-null but incomplete `findDocumentPath` result must not prevent that reconstruction.
 - Preserve the selected folder's display name as a fallback when a provider does not expose ancestry.
 - Use the same path formatter in the media-saved confirmation.
 - Give only the media-folder preference an unlimited, non-ellipsized summary view.
@@ -26,3 +27,11 @@
   - `downloaded-apk/run-39129627378/ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk`
 - No local Android build or tests were run, in accordance with repository instructions.
 - Manual device testing: not yet available. Do not merge without passed manual tests and explicit user approval.
+
+## Follow-up investigation
+
+- The user reported that the installed build still showed only the selected folder's last component.
+- The path formatter accepted any non-null `DocumentsContract.findDocumentPath` result before attempting External Storage Provider reconstruction. This allowed a non-null but incomplete provider path to bypass the reliable `primary:Pictures/ttrss` tree-ID path.
+- The formatter now prioritizes the External Storage Provider volume-relative document ID on all supported Android versions. Other providers continue to use `findDocumentPath` where available.
+- Added a regression test through the public formatter used by the preference, expecting the root title and full relative folder path.
+- Validation of this follow-up change is pending GitHub Actions.

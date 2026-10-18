@@ -127,6 +127,30 @@ the signer matches and the version code is not lower. If installation still
 fails, capture the Package Manager error using `adb install -r <apk>` or device
 installer logs rather than assuming that uninstalling an app is necessary.
 
+## Device-verifier installation failures
+
+On some devices the installer displays only "App not installed" when a device
+verifier rejects an installation. `INSTALL_FAILED_VERIFICATION_FAILURE` (-22)
+is different from an incompatible signing key, a version downgrade, or a
+conflicting provider. Changing the signing key or uninstalling the existing app
+is not an appropriate first response.
+
+Use the APK extracted from the verified Actions artifact and capture the actual
+Package Manager result. With platform-tools already installed and USB debugging
+authorized, target the intended device explicitly:
+
+```powershell
+adb -s DEVICE_SERIAL install -r "C:\path\to\ttrssreader-play-debug.apk"
+adb -s DEVICE_SERIAL shell dumpsys package org.ttrssreader.anno73
+```
+
+`-r` requests an in-place update; do not add an uninstall, data-clear, or downgrade
+step. Confirm the installed version and existing settings/data afterward. A
+successful ADB installation does not prove the normal installer path is fixed:
+verifiers can treat installation sources differently. Inspect the device's
+verification notifications/logs for a source-specific rejection; do not disable
+device protection or rotate the persistent signing key to hide the error.
+
 ## Migrating an existing installation
 
 An APK signed by an old ephemeral CI key cannot be updated with the new key.

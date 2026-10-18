@@ -57,7 +57,8 @@
 - Labels/virtual feeds are not covered by backend feed pagination; response count
   can exceed the real-feed limit. Large allowed feed limits can create large responses.
 - Offset pagination cannot guarantee a snapshot while backend data changes.
-- Manual device testing is pending; no merge is authorized.
+- In-place device installation passed as recorded below. Manual page-size feature
+  checks and user confirmation of settings/data remain pending; no merge is authorized.
 
 ## Manual checks for the downloaded APK
 1. Confirm Connection settings show default 200 and a numeric keypad. Try 1,
@@ -72,3 +73,58 @@
 5. Check a connection failure remains visible and does not replace the cached feed
    list with a partial list. Legacy API headline compatibility is covered by CI mocks;
    use a legacy backend for additional device confirmation if available.
+
+## Follow-up: reported Play APK update failure
+
+The user reported "App not installed" on Samsung Galaxy S24 Ultra / Android 16
+when updating `master_2026-10-18_18-16-18` through Package Installer. Investigated
+the local Play APKs from `downloaded-apk/run-39153383913/` and
+`downloaded-apk/run-39156906860/`; no rebuild or speculative signing change was made.
+
+### Detailed artifact comparison
+
+| Property | Installed master artifact | New feature artifact |
+| --- | --- | --- |
+| Package ID | org.ttrssreader.anno73 | org.ttrssreader.anno73 |
+| Version code | 214510578 | 214513350 |
+| Version name | master_2026-10-18_18-16-18 | feature_configurable-api-page-size_2026-10-18_19-02-30 |
+| Minimum / target SDK | 23 / 36 | 23 / 36 |
+| APK ZIP entries | 1306 | 1306 |
+| Signer SHA-256 | 28A981D4BF6D96A6D775BE02E3D69DECE5228C52DDC4FC17F39FB3E788AD9A79 | 28A981D4BF6D96A6D775BE02E3D69DECE5228C52DDC4FC17F39FB3E788AD9A79 |
+
+- Binary manifests have the same 81 start elements. Differences are the intended
+  version name/code and three activity-label resource IDs shifted by added strings;
+  package/provider identities, SDK requirements, permissions and component flags
+  are unchanged. No APK incompatibility was found in these checks.
+- Old Play APK SHA-256:
+  `2e1550ef72946dcbe28777831522465b1e812c0538aaa84e44216964f075b8b8`.
+- New Play APK SHA-256:
+  `30cf223f1478e8a7f0e6e6af95ebc77cb6f168a38a394d6560b24dfb7598491f`.
+
+### Device evidence and recovery
+
+- Used the existing adb installation and the user's explicitly identified USB
+  device. No local Android SDK installation, compilation, or Gradle execution.
+- Device Package Manager confirmed the installed old version/code above.
+- Retained failed Package Installer sessions **65419066** and **466512570** are
+  for this package and failed with **INSTALL_FAILED_VERIFICATION_FAILURE (-22)**,
+  "Install not allowed for file:///data/app/vmdl...tmp".
+- Logs show both Google Play and Samsung device-security verifiers were consulted.
+  The available evidence does not identify which verifier rejected the sessions
+  or its policy rationale. No transfer corruption or Telegram-specific defect
+  is established. Stopped looking for device-downloaded APKs at the user's request;
+  all artifact comparisons and the successful update use the local downloaded-apk file.
+- `adb -s <authorized-device> install -r <new-local-play-apk>` returned **Success**.
+  Session **336362204** completed with result **1**, and Package Manager explicitly
+  logged "Retain data and using new".
+- Post-install package inspection confirmed new version **214513350** /
+  **feature_configurable-api-page-size_2026-10-18_19-02-30**. The app's credential-
+  encrypted and device-encrypted data-directory inode IDs stayed unchanged.
+  No uninstall, data clear, verifier-setting change, or signing-key rotation occurred.
+- This resolves the current update by an observed in-place installation. Normal
+  Package Installer/source-specific verification behavior remains unverified; do
+  not claim a code fix for the verifier rejection or complete manual feature tests.
+- Added directly related README troubleshooting distinguishing device-verifier
+  rejection from signing/version/provider errors and documenting targeted,
+  data-preserving ADB diagnosis. This follow-up is documentation-only, requiring
+  no new compilation/test run; the APK source and successful CI remain unchanged.

@@ -556,6 +556,10 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 		return positiveIntPref(Constants.API_TIMEOUT, Constants.API_TIMEOUT_DEFAULT);
 	}
 
+	public int apiPageSize() {
+		return positiveIntPref(Constants.API_PAGE_SIZE, Constants.API_PAGE_SIZE_DEFAULT);
+	}
+
 	/**
 	 * @return the timeout for backend API calls in minutes, used instead of {@link #apiTimeoutSeconds()} when
 	 * {@link #lazyServer()} is enabled.
@@ -575,8 +579,11 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 			else
 				value = prefs.getInt(param, defaultValue);
 		} catch (ClassCastException e) {
+			Log.w(TAG, "Invalid integer preference " + param + "; using default.", e);
 			value = defaultValue;
 		}
+		if (value <= 0)
+			Log.w(TAG, "Non-positive integer preference " + param + "; using default.");
 		return value > 0 ? value : defaultValue;
 	}
 

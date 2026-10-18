@@ -127,6 +127,30 @@ the signer matches and the version code is not lower. If installation still
 fails, capture the Package Manager error using `adb install -r <apk>` or device
 installer logs rather than assuming that uninstalling an app is necessary.
 
+## Device-verifier installation failures
+
+On some devices the installer displays only "App not installed" when a device
+verifier rejects an installation. `INSTALL_FAILED_VERIFICATION_FAILURE` (-22)
+is different from an incompatible signing key, a version downgrade, or a
+conflicting provider. Changing the signing key or uninstalling the existing app
+is not an appropriate first response.
+
+Use the APK extracted from the verified Actions artifact and capture the actual
+Package Manager result. With platform-tools already installed and USB debugging
+authorized, target the intended device explicitly:
+
+```powershell
+adb -s DEVICE_SERIAL install -r "C:\path\to\ttrssreader-play-debug.apk"
+adb -s DEVICE_SERIAL shell dumpsys package org.ttrssreader.anno73
+```
+
+`-r` requests an in-place update; do not add an uninstall, data-clear, or downgrade
+step. Confirm the installed version and existing settings/data afterward. A
+successful ADB installation does not prove the normal installer path is fixed:
+verifiers can treat installation sources differently. Inspect the device's
+verification notifications/logs for a source-specific rejection; do not disable
+device protection or rotate the persistent signing key to hide the error.
+
 ## Migrating an existing installation
 
 An APK signed by an old ephemeral CI key cannot be updated with the new key.
@@ -196,6 +220,22 @@ all backend API calls (connect, read and write):
 Any positive whole number is accepted; both can also be set per Wi-Fi network.
 Changes apply to the next API request without restarting the app. Image and
 attachment downloads are not affected.
+
+# API page size
+Under **Settings > Connection**, **Maximum items per API request** defaults to
+**200**, matching the previous headline page size. Enter a whole number from 1 to
+2147483647; invalid input is rejected without changing the saved value. Per-Wi-Fi
+overrides are supported, and changes apply to the next download without restarting.
+
+This controls each page, not the total download. Headlines are additionally capped
+at 200 per request (60 on API levels below 6) and the remaining download budget.
+Real-feed requests use the configured size with `limit`/`offset`; that endpoint
+has no documented hard cap, so very large settings can still produce large responses.
+Labels and virtual feeds are non-pageable metadata: they are retained once but
+can make a response larger than the configured real-feed limit. Categories are
+not pageable and remain unchanged, as do article-state update batches and image
+downloads. Pagination follows the upstream
+[API handlers](https://github.com/tt-rss/tt-rss/blob/HEAD/classes/API.php).
 
 # API timeout diagnostics
 Backend API timeout dialogs and logs include the called endpoint (`URL:`) and

@@ -85,6 +85,14 @@
             android:summary="@string/ConnectionApiTimeoutPreferenceSummary"
             android:title="@string/ConnectionApiTimeoutPreferenceTitle" />
 
+        <org.ttrssreader.preferences.EditIntegerPreference
+            android:order="67"
+            android:defaultValue="200"
+            android:inputType="number"
+            android:key="ConnectionApiPageSizePreference"
+            android:summary="@string/ConnectionApiPageSizePreferenceSummary"
+            android:title="@string/ConnectionApiPageSizePreferenceTitle" />
+
         <CheckBoxPreference
             android:order="70"
             android:defaultValue="false"

@@ -6,6 +6,7 @@ import android.widget.Toast;
 
 import org.ttrssreader.R;
 import org.ttrssreader.net.ApiTimeouts;
+import org.ttrssreader.net.ApiPageSize;
 import org.ttrssreader.preferences.Constants;
 
 import androidx.annotation.Keep;
@@ -27,8 +28,9 @@ public class ConnectionPreferencesFragment extends PreferenceFragmentCompat {
 		addPreferencesFromResource(R.xml.prefs_connection);
 
 		// Configure before tryInitializeWifiPrefs() which prefixes the keys with the SSID
-		configureTimeoutPreference(Constants.API_TIMEOUT);
-		configureTimeoutPreference(Constants.LAZY_SERVER_TIMEOUT);
+		configureIntegerPreference(Constants.API_TIMEOUT, R.string.ConnectionTimeoutInvalid);
+		configureIntegerPreference(Constants.LAZY_SERVER_TIMEOUT, R.string.ConnectionTimeoutInvalid);
+		configureIntegerPreference(Constants.API_PAGE_SIZE, R.string.ConnectionPageSizeInvalid);
 
 		WifiPreferencesFragment.tryInitializeWifiPrefs(getContext(), getArguments(), getPreferenceScreen());
 
@@ -41,7 +43,7 @@ public class ConnectionPreferencesFragment extends PreferenceFragmentCompat {
 			prefPassword.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD));
 	}
 
-	private void configureTimeoutPreference(String key) {
+	private void configureIntegerPreference(String key, int errorMessage) {
 		EditTextPreference pref = findPreference(key);
 		if (pref == null)
 			return;
@@ -51,10 +53,12 @@ public class ConnectionPreferencesFragment extends PreferenceFragmentCompat {
 			editText.setSelection(editText.getText().length());
 		});
 		pref.setOnPreferenceChangeListener((preference, newValue) -> {
-			if (ApiTimeouts.isValidTimeout(newValue))
+			boolean valid = Constants.API_PAGE_SIZE.equals(key)
+					? ApiPageSize.isValid(newValue) : ApiTimeouts.isValidTimeout(newValue);
+			if (valid)
 				return true;
 			if (getContext() != null)
-				Toast.makeText(getContext(), R.string.ConnectionTimeoutInvalid, Toast.LENGTH_SHORT).show();
+				Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
 			return false;
 		});
 	}

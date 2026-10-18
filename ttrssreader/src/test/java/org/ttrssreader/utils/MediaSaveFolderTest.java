@@ -125,6 +125,8 @@ public class MediaSaveFolderTest {
 		when(tree.getAuthority()).thenReturn("com.android.externalstorage.documents");
 		when(metadata.getString(0)).thenReturn("ttrss");
 		documents.when(() -> DocumentsContract.getTreeDocumentId(tree)).thenReturn("primary:Pictures/ttrss");
+		documents.when(() -> DocumentsContract.buildDocumentUriUsingTree(tree, "primary:Pictures/ttrss"))
+				.thenReturn(folder);
 		documents.when(() -> DocumentsContract.buildRootsUri("com.android.externalstorage.documents"))
 				.thenReturn(roots);
 		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_ROOT_ID)).thenReturn(0);

@@ -74,7 +74,24 @@
   `downloaded-apk/run-39142702658/` in the same required layout.
 - Manual version-feature test: **passed**, as confirmed by the user.
   Installing over the prior app did not work; user uninstalled it first.
-- Merged-master CI and downloads: awaiting execution.
+- Merged `feature/branch-build-version` into `master` with merge commit
+  `2ebe6c1488f8ae415c4cf3685407a44b6d702ead` and pushed to `origin/master`.
+- [Merged-master CI run 39153185651](https://github.com/anno73/ttrss-reader/actions/runs/39153185651):
+  **passed** for that exact merge commit. Generator checks, existing unit tests,
+  both APK builds, package/provider identity and signing checks all passed.
+- Both merged APKs: `master_2026-10-18_18-13-47`, numeric code `214510427`.
+- Verified the retained ZIP and both extracted APKs, nonempty and in the required
+  direct-extraction layout:
+  - [ZIP](../downloaded-apk/run-39153185651/ttrss-reader-debug.zip)
+    (21,296,002 bytes).
+  - [F-Droid APK](../downloaded-apk/run-39153185651/ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk)
+    (12,022,838 bytes).
+  - [Play APK](../downloaded-apk/run-39153185651/ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk)
+    (12,548,217 bytes).
+- Finalization is complete for the merged implementation. This documentation-only
+  result update is committed and pushed separately; verify the resulting master
+  workflow and download its APKs before final handoff. No source changes are
+  introduced by that result update.
 
 ## Manual acceptance
 

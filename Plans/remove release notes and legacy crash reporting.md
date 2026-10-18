@@ -76,3 +76,14 @@ display, first-install welcome, server validation, feed syncing and APK signing.
   Fresh-install and other scenarios were covered by CI where applicable; no
   separate device result was recorded for those scenarios.
 - The user explicitly approved merging this branch into `master`.
+- Merged and pushed to `master` as `6585ac7433aa78e9f0e5e32d017fe47775516ea1`;
+  verified the upstream commit.
+- [Merged-master Android CI run 39165263256](https://github.com/anno73/ttrss-reader/actions/runs/39165263256)
+  passed, including unit tests, both APK builds and identity/signature checks.
+- Downloaded artifact `12150560763` and verified its ZIP SHA-256:
+  `99ea673325ba72fc22a0ad375e387d8ab4d7d5ae2bcdc167bfd530867b68ea8e`.
+  Retained `downloaded-apk/run-39165263256/ttrss-reader-debug.zip` (21,268,124
+  bytes) and verified extracted F-Droid (11,994,734 bytes) and Play (12,520,184
+  bytes) APKs under their original `ttrssreader/build/outputs/apk/` flavor paths.
+- The manually accepted task-branch Play build remains installed on the device;
+  the newer master artifacts were downloaded, not installed.

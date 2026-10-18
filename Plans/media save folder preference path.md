@@ -1,5 +1,12 @@
 # Show media save folder preference path
 
+## Status: on hold — do not merge
+
+- This branch (`fix/media-save-folder-root-permission`, built on `fix/media-save-folder-display-path`) is held back for later work. Do not merge either branch into `master`.
+- Manual testing did not pass: Android refused to install the APK from CI run `39136488622`/`39136709863`. The cause has not been investigated (possible signature, version-code, or package conflict with the installed build).
+- Earlier builds from this work showed only the last folder name, then a `SecurityException` for `content://com.android.externalstorage.documents/root`. The root-query fix is untested on a device.
+- Before resuming: diagnose the install refusal (for example with `adb install` output), then verify on-device that the preference shows the full picker-visible path without permission errors.
+
 ## Scope
 
 - Show the selected media folder as its full user-visible path in Usage preferences.

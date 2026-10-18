@@ -86,6 +86,60 @@ public class MediaSaveFolderTest {
 	}
 
 	@Test
+	public void displaysPickerRootAndCompleteDocumentPath() throws Exception {
+		Uri roots = mock(Uri.class);
+		Uri pictures = mock(Uri.class);
+		Cursor rootListing = mock(Cursor.class);
+		Cursor picturesMetadata = mock(Cursor.class);
+		DocumentsContract.Path path = mock(DocumentsContract.Path.class);
+		when(tree.getAuthority()).thenReturn("provider");
+		when(metadata.getString(0)).thenReturn("ttrss");
+		when(path.getRootId()).thenReturn("volume-id");
+		when(path.getPath()).thenReturn(Arrays.asList("root-document", "pictures-document", "folder-document"));
+		documents.when(() -> DocumentsContract.buildRootsUri("provider")).thenReturn(roots);
+		documents.when(() -> DocumentsContract.buildDocumentUriUsingTree(tree, "pictures-document"))
+				.thenReturn(pictures);
+		documents.when(() -> DocumentsContract.buildDocumentUriUsingTree(tree, "folder-document"))
+				.thenReturn(folder);
+		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_ROOT_ID)).thenReturn(0);
+		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_TITLE)).thenReturn(1);
+		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_DOCUMENT_ID)).thenReturn(2);
+		when(rootListing.moveToNext()).thenReturn(true, false);
+		when(rootListing.getString(0)).thenReturn("volume-id");
+		when(rootListing.getString(1)).thenReturn("External storage");
+		when(rootListing.getString(2)).thenReturn("root-document");
+		when(picturesMetadata.moveToFirst()).thenReturn(true);
+		when(picturesMetadata.getString(0)).thenReturn("Pictures");
+		when(resolver.query(eq(roots), any(String[].class), isNull(), isNull(), isNull())).thenReturn(rootListing);
+		when(resolver.query(eq(pictures), any(String[].class), isNull(), isNull(), isNull()))
+				.thenReturn(picturesMetadata);
+
+		assertEquals("External storage/Pictures/ttrss",
+				MediaSaveFolder.displayPath(context, tree, path, "ttrss"));
+	}
+
+	@Test
+	public void externalStoragePathUsesPickerRootAndFoldersInsteadOfRawVolumeId() throws Exception {
+		Uri roots = mock(Uri.class);
+		Cursor rootListing = mock(Cursor.class);
+		when(tree.getAuthority()).thenReturn("com.android.externalstorage.documents");
+		documents.when(() -> DocumentsContract.getTreeDocumentId(tree)).thenReturn("primary:Pictures/ttrss");
+		documents.when(() -> DocumentsContract.buildRootsUri("com.android.externalstorage.documents"))
+				.thenReturn(roots);
+		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_ROOT_ID)).thenReturn(0);
+		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_TITLE)).thenReturn(1);
+		when(rootListing.getColumnIndex(DocumentsContract.Root.COLUMN_DOCUMENT_ID)).thenReturn(2);
+		when(rootListing.moveToNext()).thenReturn(true, false);
+		when(rootListing.getString(0)).thenReturn("primary");
+		when(rootListing.getString(1)).thenReturn("Internal storage");
+		when(rootListing.getString(2)).thenReturn("primary:");
+		when(resolver.query(eq(roots), any(String[].class), isNull(), isNull(), isNull())).thenReturn(rootListing);
+
+		assertEquals("Internal storage/Pictures/ttrss",
+				MediaSaveFolder.externalStoragePath(context, tree, "ttrss"));
+	}
+
+	@Test
 	public void requiresPersistedReadAndWriteAccess() throws Exception {
 		MediaSaveFolder.requireWritableFolder(context, tree);
 		when(permission.isWritePermission()).thenReturn(false);
@@ -304,7 +358,7 @@ public class MediaSaveFolderTest {
 			 MockedStatic<Environment> storage = mockStatic(Environment.class);
 			 MockedStatic<Utils> utils = mockStatic(Utils.class)) {
 			storage.when(Environment::getExternalStorageState).thenReturn(Environment.MEDIA_UNMOUNTED);
-			folders.when(() -> MediaSaveFolder.displayName(context, tree)).thenReturn("Selected folder");
+			folders.when(() -> MediaSaveFolder.displayPath(context, tree)).thenReturn("Selected folder");
 			folders.when(() -> MediaSaveFolder.fileName(url.toString(), null, url.toString(), "image/jpeg"))
 					.thenReturn("photo.jpg");
 			folders.when(() -> MediaSaveFolder.mimeType("photo.jpg", "image/jpeg")).thenReturn("image/jpeg");

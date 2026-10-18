@@ -19,8 +19,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -100,8 +102,103 @@ public final class MediaSaveFolder {
 		return false;
 	}
 
-	public static String displayName(Context context, Uri tree) throws IOException {
-		return documentName(context, documentUri(tree));
+	public static String displayPath(Context context, Uri tree) throws IOException {
+		Uri document = documentUri(tree);
+		String selectedName = documentName(context, document);
+		ContentResolver resolver = context.getContentResolver();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			try {
+				DocumentsContract.Path path = DocumentsContract.findDocumentPath(resolver, document);
+				if (path != null)
+					return displayPath(context, tree, path, selectedName);
+			} catch (UnsupportedOperationException ignored) {
+				// Some document providers do not expose document ancestry.
+			}
+		}
+		return externalStoragePath(context, tree, selectedName);
+	}
+
+	static String displayPath(Context context, Uri tree, DocumentsContract.Path path,
+							  String selectedName) throws IOException {
+		ContentResolver resolver = context.getContentResolver();
+		RootInfo root = rootInfo(resolver, tree.getAuthority(), path.getRootId());
+		List<String> parts = new ArrayList<>();
+		List<String> documentIds = path.getPath();
+		if (documentIds == null)
+			return joinPath(root == null ? null : root.title, parts, selectedName);
+		for (String documentId : documentIds) {
+			if (documentId == null || documentId.isEmpty())
+				continue;
+			if (root == null || !documentId.equals(root.documentId))
+				parts.add(documentName(context,
+						DocumentsContract.buildDocumentUriUsingTree(tree, documentId)));
+		}
+		return joinPath(root == null ? null : root.title, parts, selectedName);
+	}
+
+	static String externalStoragePath(Context context, Uri tree, String selectedName) throws IOException {
+		if (!"com.android.externalstorage.documents".equals(tree.getAuthority()))
+			return selectedName;
+
+		String documentId = DocumentsContract.getTreeDocumentId(tree);
+		if (documentId == null)
+			return selectedName;
+		int separator = documentId.indexOf(':');
+		if (separator <= 0)
+			return selectedName;
+
+		String volumeId = documentId.substring(0, separator);
+		String relativePath = documentId.substring(separator + 1);
+		List<String> parts = new ArrayList<>();
+		for (String part : relativePath.split("/")) {
+			if (!part.isEmpty())
+				parts.add(part);
+		}
+		RootInfo root = rootInfo(context.getContentResolver(), tree.getAuthority(), volumeId);
+		return joinPath(root == null ? null : root.title, parts, selectedName);
+	}
+
+	private static RootInfo rootInfo(ContentResolver resolver, String authority, String rootId) throws IOException {
+		if (authority == null || rootId == null)
+			return null;
+		Uri roots = DocumentsContract.buildRootsUri(authority);
+		try (Cursor cursor = resolver.query(roots, new String[]{DocumentsContract.Root.COLUMN_ROOT_ID,
+				DocumentsContract.Root.COLUMN_TITLE, DocumentsContract.Root.COLUMN_DOCUMENT_ID},
+				null, null, null)) {
+			if (cursor == null)
+				return null;
+			int rootIdColumn = cursor.getColumnIndex(DocumentsContract.Root.COLUMN_ROOT_ID);
+			int titleColumn = cursor.getColumnIndex(DocumentsContract.Root.COLUMN_TITLE);
+			int documentIdColumn = cursor.getColumnIndex(DocumentsContract.Root.COLUMN_DOCUMENT_ID);
+			if (rootIdColumn < 0 || titleColumn < 0 || documentIdColumn < 0)
+				return null;
+			while (cursor.moveToNext()) {
+				if (rootId.equals(cursor.getString(rootIdColumn))) {
+					String title = cursor.getString(titleColumn);
+					String documentId = cursor.getString(documentIdColumn);
+					return new RootInfo(title == null || title.isEmpty() ? null : title, documentId);
+				}
+			}
+		}
+		return null;
+	}
+
+	private static String joinPath(String rootTitle, List<String> parts, String fallback) {
+		List<String> visibleParts = new ArrayList<>();
+		if (rootTitle != null && !rootTitle.isEmpty())
+			visibleParts.add(rootTitle);
+		visibleParts.addAll(parts);
+		return visibleParts.isEmpty() ? fallback : String.join("/", visibleParts);
+	}
+
+	private static final class RootInfo {
+		private final String title;
+		private final String documentId;
+
+		private RootInfo(String title, String documentId) {
+			this.title = title;
+			this.documentId = documentId;
+		}
 	}
 
 	private static String documentName(Context context, Uri document) throws IOException {

@@ -66,7 +66,7 @@ public class UsagePreferencesFragment extends PreferenceFragmentCompat {
 		try {
 			MediaSaveFolder.requireWritableFolder(requireContext(), folder);
 			preference.setSummary(getString(R.string.MediaSaveFolderSelected,
-					MediaSaveFolder.displayName(requireContext(), folder)));
+					MediaSaveFolder.displayPath(requireContext(), folder)));
 		} catch (IOException | SecurityException | IllegalArgumentException | IllegalStateException
 				 | SQLiteException | UnsupportedOperationException e) {
 			Log.w(TAG, "Saved media folder is inaccessible", e);

@@ -361,7 +361,7 @@ public class ArticleWebViewClient extends WebViewClient {
 			String fileName = null;
 
 			try {
-				String folderName = MediaSaveFolder.displayName(context, folder);
+				String folderPath = MediaSaveFolder.displayPath(context, folder);
 				URLConnection connection = Controller.getInstance().openConnection(urls[0]);
 				String savedName;
 				try (InputStream input = new BufferedInputStream(connection.getInputStream())) {
@@ -373,7 +373,7 @@ public class ArticleWebViewClient extends WebViewClient {
 				}
 
 				int seconds = (int) ((System.currentTimeMillis() - start) / Utils.SECOND);
-				String message = context.getString(R.string.ArticleActivity_MediaSaved, folderName, savedName);
+				String message = context.getString(R.string.ArticleActivity_MediaSaved, folderPath, savedName);
 				Utils.showBackgroundToast(context,
 						message, Toast.LENGTH_LONG);
 				Utils.showFinishedNotification(message, seconds, false, context,

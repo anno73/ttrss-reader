@@ -24,7 +24,7 @@
             android:key="UsageOpenUrlEmptyArticlePreference"
             android:summary="@string/UsageOpenUrlEmptyArticleSummary"
             android:title="@string/UsageOpenUrlEmptyArticleTitle"/>
-        <Preference
+        <org.ttrssreader.preferences.MediaSaveFolderPreference
             android:key="MediaSaveFolder"
             android:summary="@string/MediaSaveFolderNotSelected"
             android:title="@string/MediaSaveFolderTitle"/>

@@ -20,5 +20,9 @@
 
 - Editor diagnostics: no errors in the modified Java files.
 - Usage preference XML parsed successfully.
-- Android unit tests and APK builds: pending GitHub Actions run; local Android builds/tests are prohibited by repository instructions.
+- GitHub Actions run `39129627378` passed the media-saving and network unit tests, both debug APK builds, package/provider identity checks, and signing verification.
+- Downloaded the run's artifact to `downloaded-apk/run-39129627378/ttrss-reader-debug.zip` and extracted it into the same directory. Verified the archive SHA-256 `d20df139f6df84ffe0b041a5c151d9552578243d63e6b03c28deaec95f4ab717` and confirmed both APKs exist at:
+  - `downloaded-apk/run-39129627378/ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk`
+  - `downloaded-apk/run-39129627378/ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk`
+- No local Android build or tests were run, in accordance with repository instructions.
 - Manual device testing: not yet available. Do not merge without passed manual tests and explicit user approval.

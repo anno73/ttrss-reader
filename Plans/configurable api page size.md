@@ -60,7 +60,7 @@
 - In-place device installation passed as recorded below. The user confirmed that
   manual page-size/download tests passed and existing settings/data are intact.
   The user explicitly approved merging `feature/configurable-api-page-size` into
-  `master`; merge and merged-build validation are being completed below.
+  `master`; the approved merge and merged-build validation are complete below.
 
 ## Manual checks for the downloaded APK
 1. Confirm Connection settings show default 200 and a numeric keypad. Try 1,
@@ -135,4 +135,29 @@ the local Play APKs from `downloaded-apk/run-39153383913/` and
   the connected Samsung device. It does not establish that the original
   non-ADB installer-verifier rejection is resolved.
 - After that confirmation, the user explicitly selected **Merge into master**.
-  Proceed with the approved merge and verify its GitHub Actions build/artifacts.
+  Completed the approved merge and verified its GitHub Actions build/artifacts.
+
+## Approved master merge and final validation
+
+- Merged the tested feature branch into up-to-date master using merge commit
+  `137e99b8206d058ab4e03415c7e77b57ffb0bf2b`. Pushed master and verified that
+  origin/master resolves to that commit.
+- [Android CI run 39159825420](https://github.com/anno73/ttrss-reader/actions/runs/39159825420)
+  **passed** for that exact merged commit. Unit tests, version-generation checks,
+  both debug APK builds, package/provider/version/signing checks, backend-skill
+  tests, and artifact upload all completed successfully.
+- Downloaded artifact **12148278448** and verified its SHA-256:
+  `39371bc70975ec894559a6b09ff681cb0f6ebc607949c32173f13537f1155292`.
+- Verified the required retained ZIP and directly extracted APK paths:
+  - `downloaded-apk/run-39159825420/ttrss-reader-debug.zip` (21,298,714 bytes).
+  - `downloaded-apk/run-39159825420/ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk`
+    (12,025,891 bytes).
+  - `downloaded-apk/run-39159825420/ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk`
+    (12,551,311 bytes).
+- The final execution-record commit changes documentation only and is pushed
+  separately with CI skipped. The tested merged source and downloaded APKs are
+  unchanged. The unrelated untracked TODO.md remains untouched/uncommitted.
+- Device/manual tests passed on the feature APK before the approved merge.
+  The final master APKs are built and CI-verified, not additionally installed
+  on the device. Normal non-ADB installer-verifier behavior remains a documented
+  limitation, not an APK signing/version regression.

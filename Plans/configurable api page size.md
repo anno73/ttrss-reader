@@ -57,8 +57,9 @@
 - Labels/virtual feeds are not covered by backend feed pagination; response count
   can exceed the real-feed limit. Large allowed feed limits can create large responses.
 - Offset pagination cannot guarantee a snapshot while backend data changes.
-- In-place device installation passed as recorded below. Manual page-size feature
-  checks and user confirmation of settings/data remain pending; no merge is authorized.
+- In-place device installation passed as recorded below. The user confirmed that
+  manual page-size/download tests passed and existing settings/data are intact.
+  Explicit merge approval is still required; no merge has been performed.
 
 ## Manual checks for the downloaded APK
 1. Confirm Connection settings show default 200 and a numeric keypad. Try 1,
@@ -128,3 +129,7 @@ the local Play APKs from `downloaded-apk/run-39153383913/` and
   rejection from signing/version/provider errors and documenting targeted,
   data-preserving ADB diagnosis. This follow-up is documentation-only, requiring
   no new compilation/test run; the APK source and successful CI remain unchanged.
+- The user subsequently confirmed **manual tests passed and existing settings/data
+  are intact**. This validates the feature and data-preserving in-place update on
+  the connected Samsung device. It does not establish that the original
+  non-ADB installer-verifier rejection is resolved.

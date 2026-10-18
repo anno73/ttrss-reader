@@ -32,8 +32,11 @@ source branch, not the temporary merge ref.
 
 **Preferences > Information > Version** displays the full installed version
 as a read-only row. The About screen uses the same installed package metadata.
-Installing a differently named build triggers the existing one-time new-version
-handling; reopening that installed build does not.
+Installing another build no longer opens an in-app release-notes screen.
+The welcome screen is shown only on the first launch of a fresh installation.
+Repository changelogs and external project/download links remain available.
+The legacy email crash reporter, its preferences, and its background request
+to the original developer's minimum-supported-version endpoint have been removed.
 
 The numeric Android `versionCode` is whole seconds since **2020-01-01 00:00:00
 UTC**, derived from the same build instant. Builds fail if the code is not

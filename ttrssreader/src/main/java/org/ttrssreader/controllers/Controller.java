@@ -17,14 +17,9 @@
 
 package org.ttrssreader.controllers;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.Signature;
 import android.content.res.Configuration;
 import android.net.http.HttpResponseCache;
 import android.net.wifi.WifiInfo;
@@ -62,8 +57,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -80,8 +73,6 @@ import androidx.preference.PreferenceManager;
 public class Controller extends Constants implements OnSharedPreferenceChangeListener {
 
 	private static final String TAG = Controller.class.getSimpleName();
-	private static final String SIGNATURE = "zu16x7lDmO/+vP+t1svSWI1lJFQ=";
-	private static final String PLAY_STORE_APP_ID = "com.android.vending";
 
 	public final static String JSON_END_URL = "api/index.php";
 
@@ -147,15 +138,6 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 	private Boolean cacheImagesOnStartup = null;
 	private Boolean cacheImagesOnlyWifi = null;
 	private Boolean onlyUseWifi = null;
-	private Boolean noCrashreports = null;
-	private Boolean noCrashreportsUntilUpdate = null;
-
-	// Set to true per default to avoid never getting reports for bugs during startup
-	private Boolean validInstallation = true;
-
-	private Long appVersionCheckTime = null;
-	private Integer appLatestVersion = null;
-	private String lastVersionRun = null;
 	private Long freshArticleMaxAge = null;
 	private Long freshArticleMaxAgeDate = null;
 	private Integer sinceId = null;
@@ -205,15 +187,6 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 		// Initially read absolutely necessary preferences:
 		sizeVerticalCategory = prefs.getInt(SIZE_VERTICAL_CATEGORY, -1);
 		sizeHorizontalCategory = prefs.getInt(SIZE_HORIZONTAL_CATEGORY, -1);
-
-		/* Check signature, if we were installed from google play, if we are running in an emulator and if
-		debuggable=true */
-		boolean valid;
-		valid = checkRightAppSignature(context);
-		valid &= checkRightInstaller(context);
-		valid &= checkNoEmulator();
-		valid &= checkDebuggableDisabled(context);
-		setValidInstallation(valid);
 
 		if (initialized)
 			return;
@@ -277,53 +250,6 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 
 			initialized = true;
 		}
-	}
-
-	@SuppressLint("PackageManagerGetSignatures")
-	public static boolean checkRightAppSignature(Context context) {
-		PackageManager pm = context.getPackageManager();
-		try {
-			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-
-				PackageInfo packageInfo = pm.getPackageInfo(context.getPackageName(), PackageManager.GET_SIGNATURES);
-				for (Signature signature : packageInfo.signatures) {
-					if (matchesSignature(signature))
-						return true;
-				}
-
-			} else {
-
-				PackageInfo packageInfo = pm.getPackageInfo(context.getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
-				for (Signature signature : packageInfo.signingInfo.getApkContentsSigners()) {
-					if (matchesSignature(signature))
-						return true;
-				}
-
-			}
-		} catch (Exception e) {
-			Log.w(TAG, "Signing key could not be determined, assuming wrong key.");
-		}
-		return false;
-	}
-
-	private static boolean matchesSignature(Signature sig) throws NoSuchAlgorithmException {
-		MessageDigest md = MessageDigest.getInstance("SHA");
-		md.update(sig.toByteArray());
-		final String currentSignature = Base64.encodeToString(md.digest(), Base64.NO_WRAP).replace("\r", "").replace("\n", "");
-		return SIGNATURE.equals(currentSignature);
-	}
-
-	public static boolean checkRightInstaller(final Context context) {
-		final String installer = context.getPackageManager().getInstallerPackageName(context.getPackageName());
-		return installer != null && installer.startsWith(PLAY_STORE_APP_ID);
-	}
-
-	public static boolean checkNoEmulator() {
-		return !("google_sdk".equals(Build.PRODUCT) || "sdk".equals(Build.PRODUCT) || "sdk_x86".equals(Build.PRODUCT) || "vbox86p".equals(Build.PRODUCT));
-	}
-
-	public static boolean checkDebuggableDisabled(final Context context) {
-		return (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) == 0;
 	}
 
 	/**
@@ -1312,80 +1238,12 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 		this.onlyUseWifi = onlyUseWifi;
 	}
 
-	// Returns true if noCrashreports OR noCrashreportsUntilUpdate is true.
-	public boolean isNoCrashreports() {
-		if (noCrashreports == null)
-			noCrashreports = prefs.getBoolean(NO_CRASHREPORTS, NO_CRASHREPORTS_DEFAULT);
-		if (noCrashreportsUntilUpdate == null)
-			noCrashreportsUntilUpdate = prefs.getBoolean(NO_CRASHREPORTS_UNTIL_UPDATE, NO_CRASHREPORTS_UNTIL_UPDATE_DEFAULT);
-		return noCrashreports || noCrashreportsUntilUpdate;
-	}
-
-	public void setNoCrashreports(boolean noCrashreports) {
-		put(NO_CRASHREPORTS, noCrashreports);
-		this.noCrashreports = noCrashreports;
-	}
-
-	public void setNoCrashreportsUntilUpdate(boolean noCrashreportsUntilUpdate) {
-		put(NO_CRASHREPORTS_UNTIL_UPDATE, noCrashreportsUntilUpdate);
-		this.noCrashreportsUntilUpdate = noCrashreportsUntilUpdate;
-	}
-
 	// ******* INTERNAL Data ****************************
 
-	public boolean isValidInstallation() {
-		return validInstallation;
-	}
-
-	public void setValidInstallation(boolean validInstallation) {
-		this.validInstallation = validInstallation;
-	}
-
-	public long appVersionCheckTime() {
-		if (appVersionCheckTime == null)
-			appVersionCheckTime = prefs.getLong(APP_VERSION_CHECK_TIME, APP_VERSION_CHECK_TIME_DEFAULT);
-		return appVersionCheckTime;
-	}
-
-	private void setAppVersionCheckTime(long appVersionCheckTime) {
-		put(APP_VERSION_CHECK_TIME, appVersionCheckTime);
-		this.appVersionCheckTime = appVersionCheckTime;
-	}
-
-	public int appLatestVersion() {
-		if (appLatestVersion == null) {
-			try {
-				appLatestVersion = prefs.getInt(APP_LATEST_VERSION, APP_LATEST_VERSION_DEFAULT);
-			} catch (ClassCastException e) {
-				// For some users this returns a Long, can't really fix it so just reset the pref and read again:
-				Log.w(TAG, "Preference appLatestVersion() was reset due to wrong type stored as an INT variable...", e);
-				setAppLatestVersion(APP_LATEST_VERSION_DEFAULT);
-				appLatestVersion = prefs.getInt(APP_LATEST_VERSION, APP_LATEST_VERSION_DEFAULT);
-			}
-		}
-		return appLatestVersion;
-	}
-
-	public void setAppLatestVersion(int appLatestVersion) {
-		put(APP_LATEST_VERSION, appLatestVersion);
-		this.appLatestVersion = appLatestVersion;
-		setAppVersionCheckTime(System.currentTimeMillis());
-		// Set current time, this only changes when it has been fetched from the server
-	}
-
-	public String getLastVersionRun() {
-		if (lastVersionRun == null)
-			lastVersionRun = prefs.getString(LAST_VERSION_RUN, LAST_VERSION_RUN_DEFAULT);
-		return lastVersionRun;
-	}
-
-	public void setLastVersionRun(String lastVersionRun) {
-		put(LAST_VERSION_RUN, lastVersionRun);
-		this.lastVersionRun = lastVersionRun;
-	}
-
 	public boolean isFirstRun() {
-		return prefs.getBoolean(IS_FIRST_RUN, IS_FIRST_RUN_DEFAULT);
+		// Older installs may have a version marker but no explicit first-run preference.
+		return prefs.getBoolean(IS_FIRST_RUN, IS_FIRST_RUN_DEFAULT)
+				&& "1".equals(prefs.getString("LastVersionRun", "1"));
 	}
 
 	public void setFirstRun(boolean isFirstRun) {
@@ -1404,7 +1262,7 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 			} catch (ClassCastException e) {
 				// For some users this returns a Long, can't really fix it so just reset the pref and read again:
 				Log.w(TAG, "Preference getSinceId() was reset due to wrong type stored as an INT variable...", e);
-				setAppLatestVersion(SINCE_ID_DEFAULT);
+				setSinceId(SINCE_ID_DEFAULT);
 				sinceId = prefs.getInt(SINCE_ID, SINCE_ID_DEFAULT);
 			}
 		}

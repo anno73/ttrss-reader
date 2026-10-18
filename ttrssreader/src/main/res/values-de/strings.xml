@@ -30,9 +30,6 @@ not, see http://www.gnu.org/licenses/.
     <string name="Preferences_ResetCache">ImageCache zurücksetzen</string>
     <string name="Preferences_ResetCache_Done">ImageCache wurde zurückgesetzt.</string>
     <string name="Preferences_Btn">Einstellungen</string>
-    <string name="Changelog_Title">Changelog</string>
-    <string name="Changelog_Prefix"><![CDATA[Das komplette Changelog kann auf der Projektseite auf <a href="%s">github.com</a> eingesehen werden.]]></string>
-    <string name="Changelog_Suffix"><![CDATA[Alle weiteren Einträge sind hier nicht aufgeführt. Das komplette Changelog finden Sie auf der Projektseite unter <a href="%s">github.com</a>.]]></string>
     <string name="Welcome_Title">Willkommen</string>
     <string name="Welcome_Message">Willkommen zum TTRSS-Reader!\n\nBitte beachten Sie, dass dieser Reader nur mit einem \"Tiny Tiny RSS\"-Server arbeiten kann.\n\nWenn dies der erste Start dieser Anwendung ist, sollten Sie Ihre Server- und Benutzer-Einstellungen setzen. Drücken Sie \"Einstellungen\", um fortzufahren.</string>
     <string name="AboutActivity_Title">Info…</string>
@@ -233,10 +230,6 @@ not, see http://www.gnu.org/licenses/.
     <string name="DeleteDBOnNextStartupSummary">Löscht die Datenbank beim nächsten Start der Anwendung.</string>
     <string name="OnlyUseWifiTitle">Nur mit WLAN verbinden</string>
     <string name="OnlyUseWifiSummary">Wenn akttiviert, wird sich die App nur mit dem Server verbinden, wenn eine WLAN-Verbindung besteht.</string>
-    <string name="NoCrashreportsTitle">Fehlerberichte deaktivieren</string>
-    <string name="NoCrashreportsSummary">Deaktiviert das Senden von Fehlerberichten vollständig. Bitte beachten Sie, dass ohnehin in KEINEM Fall irgendwelche Daten ohne Ihre Erlaubnis übermittelt werden. Es wird nur die E-Mail-App geöffnet und Sie können die Daten prüfen, bevor sie an mich verschickt werden.</string>
-    <string name="NoCrashreportsUntilUpdateTitle">Fehlerberichte bis zum nächsten Update deaktivieren.</string>
-    <string name="NoCrashreportsUntilUpdateSummary">Deaktiviert das Senden von Fehlerberichten bis zum nächsten Update. Bitte beachten Sie, dass ohnehin in KEINEM Fall irgendwelche Daten ohne Ihre Erlaubnis übermittelt werden. Es wird nur die E-Mail-App geöffnet und Sie können die Daten prüfen, bevor sie an mich verschickt werden.</string>
     <string name="ConnectionWifiPrefScreenTitle">WLAN-Einstellungen pro Netzwerk</string>
     <string name="ConnectionWifiPrefScreenSummary">Spezielle Konfiguration für bestimmte WLAN-Netzwerke</string>
     <string name="ConnectionWifiPrefCatTitle">Verfügbare Netzwerke</string>

@@ -22,7 +22,6 @@
     <string name="Main_ImageCache">Cache images</string>
     <string name="Preferences_Reset">Mettre à zéro les préférences</string>
     <string name="Preferences_Btn">Préférences</string>
-    <string name="Changelog_Title">Changements</string>
     <string name="Welcome_Title">Bienvenue</string>
     <string name="Welcome_Message">Bienvenue sur TTRSS-Reader!\n\nNoter que ce lecteur ne fonctionne qu\'avec un serveur \"Tiny Tiny RSS\".\n\nSi c\'est la première fois que vous lancez TTRSS-Reader, vous devriez indiquer l\'adresse du serveur et configurer l\'utilisateur. Appuyer sur "Préférences" pour y accéder.</string>
     <string name="AboutActivity_Title">A propos</string>

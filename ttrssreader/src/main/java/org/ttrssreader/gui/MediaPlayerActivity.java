@@ -25,13 +25,10 @@ import android.widget.VideoView;
 
 import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
-import org.ttrssreader.utils.PostMortemReportExceptionHandler;
 
 public class MediaPlayerActivity extends MenuFlavorActivity {
 
 	//	private static final String TAG = MediaPlayerActivity.class.getSimpleName();
-
-	private PostMortemReportExceptionHandler mDamageReport = new PostMortemReportExceptionHandler(this);
 
 	public static final String URL = "media_url";
 
@@ -40,7 +37,6 @@ public class MediaPlayerActivity extends MenuFlavorActivity {
 		super.onCreate(instance);
 		setTheme(Controller.getInstance().getThemeResource());
 		Controller.getInstance().initializeThemeMode();
-		mDamageReport.initialize();
 
 		setContentView(R.layout.media);
 
@@ -61,13 +57,6 @@ public class MediaPlayerActivity extends MenuFlavorActivity {
 		videoView.setMediaController(mediaController);
 		videoView.setVideoURI(video);
 		videoView.start();
-	}
-
-	@Override
-	protected void onDestroy() {
-		mDamageReport.restoreOriginalHandler();
-		mDamageReport = null;
-		super.onDestroy();
 	}
 
 }

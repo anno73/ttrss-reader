@@ -24,7 +24,6 @@ import org.json.JSONObject;
 import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
 import org.ttrssreader.imageCache.PluginJsonValues;
-import org.ttrssreader.utils.PostMortemReportExceptionHandler;
 
 import androidx.annotation.NonNull;
 
@@ -32,14 +31,11 @@ public final class EditPluginActivity extends AbstractPluginActivity {
 
 	//	private static final String TAG = EditPluginActivity.class.getSimpleName();
 
-	final PostMortemReportExceptionHandler mDamageReport = new PostMortemReportExceptionHandler(this);
-
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
 		setTheme(Controller.getInstance().getThemeResource());
 		super.onCreate(savedInstanceState);
 		Controller.getInstance().initializeThemeMode();
-		mDamageReport.initialize();
 		setContentView(R.layout.localeplugin);
 	}
 
@@ -48,12 +44,6 @@ public final class EditPluginActivity extends AbstractPluginActivity {
 		String imageText = (images ? "Caching images" : "Not caching images");
 		String notificationText = (notification ? "Showing notification" : "Not showing notification");
 		return imageText + ", " + notificationText;
-	}
-
-	@Override
-	protected void onDestroy() {
-		mDamageReport.restoreOriginalHandler();
-		super.onDestroy();
 	}
 
 	@Override

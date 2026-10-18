@@ -23,7 +23,6 @@
     <string name="Preferences_Reset">Reiniciar Preferencias</string>
     <string name="Preferences_ResetDatabase">Reiniciar base de datos</string>
     <string name="Preferences_Btn">Preferencias</string>
-    <string name="Changelog_Title">Cambios</string>
     <string name="Welcome_Title">Bienvenido</string>
     <string name="Welcome_Message">Bienvenido a TTRSS-Reader!\n\nSepa que este lector solo funciona con servidores \"Tiny Tiny RSS\" .\n\nSi esta es la primera vez que ha iniciado TTRSS-Reader debería configurar el servidor y las credenciales. Pulse "Preferencias" para proceder.</string>
     <string name="AboutActivity_Title">Acerca de</string>

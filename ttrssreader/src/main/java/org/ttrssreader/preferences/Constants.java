@@ -157,8 +157,6 @@ public class Constants {
 	public static final String CACHE_IMAGES_ON_STARTUP = "CacheImagesOnStartupPreference";
 	public static final String CACHE_IMAGES_ONLY_WIFI = "CacheImagesOnlyWifiPreference";
 	public static final String ONLY_USE_WIFI = "OnlyUseWifiPreference";
-	public static final String NO_CRASHREPORTS = "NoCrashreportsPreference";
-	public static final String NO_CRASHREPORTS_UNTIL_UPDATE = "NoCrashreportsUntilUpdatePreference";
 	public static final String IS_FIRST_RUN = "IsFirstRun";
 	// System Default Values
 	public static final int CACHE_FOLDER_MAX_SIZE_DEFAULT = 80;
@@ -169,14 +167,9 @@ public class Constants {
 	public static final boolean CACHE_IMAGES_ON_STARTUP_DEFAULT = false;
 	public static final boolean CACHE_IMAGES_ONLY_WIFI_DEFAULT = false;
 	public static final boolean ONLY_USE_WIFI_DEFAULT = false;
-	public static final boolean NO_CRASHREPORTS_DEFAULT = false;
-	public static final boolean NO_CRASHREPORTS_UNTIL_UPDATE_DEFAULT = false;
 	public static final boolean IS_FIRST_RUN_DEFAULT = true;
 
 	// Internal
-	public static final String APP_VERSION_CHECK_TIME = "appVersionCheckTime";
-	public static final String APP_LATEST_VERSION = "appLatestVersion";
-	public static final String LAST_VERSION_RUN = "LastVersionRun";
 	public static final String FRESH_ARTICLE_MAX_AGE = "freshArticleMaxAge";
 	public static final String FRESH_ARTICLE_MAX_AGE_DATE = "freshArticleMaxAgeDate";
 	public static final String SINCE_ID = "sinceId";
@@ -184,9 +177,6 @@ public class Constants {
 	public static final String LAST_CLEANUP = "lastCleanup";
 	public static final String ENABLE_WIFI_BASED_SUFFIX = "_pref_enable_wifibased";
 	// Internal Default Values
-	public static final long APP_VERSION_CHECK_TIME_DEFAULT = 0;
-	public static final int APP_LATEST_VERSION_DEFAULT = 0;
-	public static final String LAST_VERSION_RUN_DEFAULT = "1"; // Needs to be a string
 	public static final long FRESH_ARTICLE_MAX_AGE_DEFAULT = Utils.DAY;
 	public static final long FRESH_ARTICLE_MAX_AGE_DATE_DEFAULT = 0;
 	public static final int SINCE_ID_DEFAULT = 0;

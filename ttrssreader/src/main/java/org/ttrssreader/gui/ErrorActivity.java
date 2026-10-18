@@ -26,13 +26,10 @@ import android.widget.TextView;
 import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
 import org.ttrssreader.preferences.PreferencesActivity;
-import org.ttrssreader.utils.PostMortemReportExceptionHandler;
 
 public class ErrorActivity extends Activity {
 
 	//	private static final String TAG = ErrorActivity.class.getSimpleName();
-
-	private PostMortemReportExceptionHandler mDamageReport = new PostMortemReportExceptionHandler(this);
 
 	public static final int ACTIVITY_SHOW_ERROR = 42;
 	static final int ACTIVITY_EXIT = 40;
@@ -45,7 +42,6 @@ public class ErrorActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setTheme(Controller.getInstance().getThemeResource());
 		Controller.getInstance().initializeThemeMode();
-		mDamageReport.initialize();
 
 		setContentView(R.layout.error);
 
@@ -70,13 +66,6 @@ public class ErrorActivity extends Activity {
 
 		Button closeBtn = (Button) this.findViewById(R.id.ErrorActivity_CloseBtn);
 		closeBtn.setOnClickListener(view -> closeButtonPressed());
-	}
-
-	@Override
-	protected void onDestroy() {
-		mDamageReport.restoreOriginalHandler();
-		mDamageReport = null;
-		super.onDestroy();
 	}
 
 	private void exitButtonPressed() {

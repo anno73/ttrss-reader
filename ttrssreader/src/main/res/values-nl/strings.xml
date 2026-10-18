@@ -66,8 +66,6 @@
     <string name="CacheImagesOnStartupSummary">Aktiveer om beeld cachen te starten bij de start van dit programma (alle artikelen en beelden zullen gedownload worden)</string>
     <string name="CacheImagesOnStartupTitle">Start beeld cachen bij opstarten?</string>
     <string name="CacheImagesOnlyWifiSummary">Stelt de automatische beeldcache in om enkel bij wifi te starten</string>
-    <string name="Changelog_Title">Wjizigingen</string>
-    <string name="Changelog_Suffix"><![CDATA[Oudere wijzigingen zijn hier weggelaten. Voor de volledige lijst, zie de projectpagina op <a href="%s">github.com</a>.]]></string>
     <string name="Commons_AddArticleLabel">Voeg label toe</string>
     <string name="Commons_DisplayOnlyCachedImages">Enkele gecachte artikelen</string>
     <string name="Commons_MarkStar">Markeren</string>
@@ -173,10 +171,6 @@
     <string name="DisplayAnimationsSummary">Aktiveer animaties bij het wisselen van feeds en artikelen</string>
     <string name="DisplayAnimationsTitle">Aktiveer animaties</string>
     <string name="OnlyUseWifiSummary">Indien aktief zal de app enkel verbinding maken via wifi</string>
-    <string name="NoCrashreportsUntilUpdateTitle">Zet crash berichten uit tot volgende update</string>
-    <string name="NoCrashreportsUntilUpdateSummary">Zet crash berichten uit tot de volgende update van de app geïnstalleerd is. Noteer dat in elk geval nooit ongevraag data wordt doorgestuurd naar de ontwikkelaar: crash berichten worden getoond en u behoudt de keuze om ze al dan niet te versturen.</string>
-    <string name="NoCrashreportsTitle">Zet crash berichten uit.</string>
-    <string name="NoCrashreportsSummary">Zet rapporteringsfunctie volledig uit. Merk op dat, om de hoeveelheid rapporten redelijk te houden, deze app een bestand met de meest recente versie download van een private website. Het bestand is slechts 5 bytes in grootte, en wordt één keer per dag gedownload als bug rapportering aktief is. Naast dit mechanisme wordt geen data doorgestuurd zonder uw toestemming. Voor het versturen van een crash rapport wordt een mail opgemaakt die u kunt nalezen voor ze op te sturen.</string>
     <string name="No">Nee</string>
     <string name="MiscellaneousPreferenceCategoryTitle">Andere voorkeuren</string>
     <string name="Main_ShowPreferencesMenu">Voorkeuren</string>
@@ -274,7 +268,6 @@
     <string name="DisplayVirtualPreferenceTitle">Toon virtuele feeds</string>
     <string name="DisplayVirtualPreferenceSummary">Vink uit om virtuele feeds te verbergen</string>
     <string name="DisplayTimeFormatSummary">Specifieer een formaat voor de tijd (zie wiki). Standaard \"kk:mm\". Ongeldige waarden zullen stilzwijgend genegeerd worden.</string>
-    <string name="Changelog_Prefix"><![CDATA[Voor alle wijzigingen, zie de projectpagina op <a href="%s">github.com</a>.]]></string>
     <string name="DisplayDateTimeFormatSummary">Specifieer een formaat voor datum en tijd (zie ook in de wiki). Standaard is \"dd.MM.yyyy kk:mm\". Ongeldige waarden worden stil genegeerd.</string>
     <string name="DisplayDateTimeFormatSystemSummary">Vink aan om de systeem standaard voor datum en tijd te gebruiken. Vink uit voor een eigen formaat.</string>
     <string name="HideFeedReadButtonsSummary">Indien aangevinkt verwijderd dit de mogelijkheid om een volledige feed als gelezen te markeren. Deze optie wordt verwijderd uit menu and de ActionBar.</string>

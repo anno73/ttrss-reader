@@ -29,7 +29,6 @@ import android.widget.TextView;
 
 import org.ttrssreader.R;
 import org.ttrssreader.controllers.Controller;
-import org.ttrssreader.utils.PostMortemReportExceptionHandler;
 import org.ttrssreader.utils.Utils;
 
 import java.util.Date;
@@ -45,14 +44,11 @@ public class AboutActivity extends MenuFlavorActivity {
 
 	//	private static final String TAG = AboutActivity.class.getSimpleName();
 
-	private PostMortemReportExceptionHandler mDamageReport = new PostMortemReportExceptionHandler(this);
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setTheme(Controller.getInstance().getThemeResource());
 		Controller.getInstance().initializeThemeMode();
-		mDamageReport.initialize();
 
 		Window w = getWindow();
 		w.requestFeature(Window.FEATURE_LEFT_ICON);
@@ -106,13 +102,6 @@ public class AboutActivity extends MenuFlavorActivity {
 
 			return WindowInsetsCompat.CONSUMED;
 		});
-	}
-
-	@Override
-	protected void onDestroy() {
-		mDamageReport.restoreOriginalHandler();
-		mDamageReport = null;
-		super.onDestroy();
 	}
 
 	private void closeButtonPressed() {

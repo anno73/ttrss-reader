@@ -45,4 +45,7 @@
 - The user reported that the preference now surfaced a `SecurityException` for `content://com.android.externalstorage.documents/root`. The formatter queried this provider-global root endpoint to obtain the root title, which is not covered by a persisted tree grant.
 - Removed root-table lookups. External-storage volume labels now come from `StorageManager`/`StorageVolume`; selected-tree-relative folder components continue to come from the tree URI's document ID. For other document providers, the root entry is omitted and the authorized ancestry entries are formatted without querying global roots.
 - Added regression coverage for the external-storage title and path, and assertions that neither external-storage nor generic providers are queried for root listings.
-- Validate this follow-up only through `.github/workflows/android-build.yml`; do not run Android builds or tests locally.
+- GitHub Actions run [39136488622](https://github.com/anno73/ttrss-reader/actions/runs/39136488622) passed the media-saving and network unit tests, both debug APK builds, package/provider identity checks, and signing verification.
+- Downloaded the run's artifact to `downloaded-apk/run-39136488622/ttrss-reader-debug.zip` and extracted it into the same directory. Verified SHA-256 `3d4eee6dce9723d94bb48a228b447ba12b490c5d7bebb008247ea9fbfbade4fe` and confirmed the fdroid and play APKs exist under `ttrssreader/build/outputs/apk/{fdroid,play}/debug/`.
+- No local Android build or tests were run, in accordance with repository instructions.
+- Manual device testing is still required to confirm the permission error is gone and the preference displays the complete path. Do not merge without successful manual tests and explicit user approval.

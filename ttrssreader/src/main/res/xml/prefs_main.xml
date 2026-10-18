@@ -85,7 +85,7 @@
             android:title="@string/About_project">
             <intent
                 android:action="android.intent.action.VIEW"
-                android:data="https://github.com/nilsbraden/ttrss-reader-fork" />
+                android:data="https://github.com/anno73/ttrss-reader" />
         </Preference>
         <Preference
             android:icon="@android:drawable/ic_menu_agenda"
@@ -93,7 +93,7 @@
             android:title="@string/About_feedback">
             <intent
                 android:action="android.intent.action.VIEW"
-                android:data="https://github.com/nilsbraden/ttrss-reader-fork/issues" />
+                android:data="https://github.com/anno73/ttrss-reader/issues" />
         </Preference>
         <Preference
             android:icon="@android:drawable/ic_menu_gallery"

@@ -32,8 +32,13 @@
    pushed the task branch to its upstream. Verified the successful CI run belongs
    to that exact commit, downloaded the artifact and verified the required layout.
    This execution record is committed separately; its push also triggers Android
-   CI and must be verified before handoff. No merge until manual tests pass and
-   the user explicitly approves it.
+   CI and was verified before handoff.
+7. User confirmed that the version feature works, reported uninstalling the old
+   app was necessary, and requested no further changes. In-place update/data
+   preservation therefore remains unverified; no signing fix is claimed.
+8. User explicitly requested finalization and merge into master, followed by CI
+   compilation, checks and APK download. Proceed with this approval, retaining
+   the installation limitation above. Record merged-build results below.
 
 ## Validation
 
@@ -62,7 +67,14 @@
   without flattening or an extra artifact-name directory. Downloads are ignored
   by Git, not committed.
 - No local compilation, Gradle tasks or tests were run.
-- Manual Android tests: pending.
+- [Final feature-branch CI run 39142702658](https://github.com/anno73/ttrss-reader/actions/runs/39142702658):
+  **passed** for `1eac7c28ab254e8233fcbecf70d663525b4538e8`.
+  Both versions were `feature_branch-build-version_2026-10-18_15-56-10`,
+  code `214502170`. ZIP and both APKs were verified under
+  `downloaded-apk/run-39142702658/` in the same required layout.
+- Manual version-feature test: **passed**, as confirmed by the user.
+  Installing over the prior app did not work; user uninstalled it first.
+- Merged-master CI and downloads: awaiting execution.
 
 ## Manual acceptance
 

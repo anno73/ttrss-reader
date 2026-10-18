@@ -53,6 +53,7 @@ public class Constants {
 	public static final String PROXY_HOST = "ConnectionProxyHostPreference";
 	public static final String PROXY_PORT = "ConnectionProxyPortPreference";
 	public static final String API_TIMEOUT = "ConnectionApiTimeoutPreference";
+	public static final String API_PAGE_SIZE = "ConnectionApiPageSizePreference";
 	public static final String LAZY_SERVER_TIMEOUT = "ConnectionLazyServerTimeoutPreference";
 	public static final String IGNORE_UNSAFE_CONNECTION_ERROR = "IgnoreUnsafeConnectionError";
 
@@ -69,6 +70,7 @@ public class Constants {
 	public static final boolean IGNORE_UNSAFE_CONNECTION_ERROR_DEFAULT = false;
 	public static final int PROXY_PORT_DEFAULT = 1080;
 	public static final int API_TIMEOUT_DEFAULT = 10; // seconds
+	public static final int API_PAGE_SIZE_DEFAULT = 200;
 	public static final int LAZY_SERVER_TIMEOUT_DEFAULT = 10; // minutes
 
 	// Usage

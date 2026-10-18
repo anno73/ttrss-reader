@@ -197,6 +197,22 @@ Any positive whole number is accepted; both can also be set per Wi-Fi network.
 Changes apply to the next API request without restarting the app. Image and
 attachment downloads are not affected.
 
+# API page size
+Under **Settings > Connection**, **Maximum items per API request** defaults to
+**200**, matching the previous headline page size. Enter a whole number from 1 to
+2147483647; invalid input is rejected without changing the saved value. Per-Wi-Fi
+overrides are supported, and changes apply to the next download without restarting.
+
+This controls each page, not the total download. Headlines are additionally capped
+at 200 per request (60 on API levels below 6) and the remaining download budget.
+Real-feed requests use the configured size with `limit`/`offset`; that endpoint
+has no documented hard cap, so very large settings can still produce large responses.
+Labels and virtual feeds are non-pageable metadata: they are retained once but
+can make a response larger than the configured real-feed limit. Categories are
+not pageable and remain unchanged, as do article-state update batches and image
+downloads. Pagination follows the upstream
+[API handlers](https://github.com/tt-rss/tt-rss/blob/HEAD/classes/API.php).
+
 # API timeout diagnostics
 Backend API timeout dialogs and logs include the called endpoint (`URL:`) and
 the JSON request body (`JSON:`), including timeouts while reading a response.

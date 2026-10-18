@@ -111,6 +111,9 @@ not, see http://www.gnu.org/licenses/.
     <string name="ConnectionApiTimeoutPreferenceTitle">API-Timeout (Sekunden)</string>
     <string name="ConnectionApiTimeoutPreferenceSummary">Verbindungs-, Lese- und Schreib-Timeout für API-Aufrufe in Sekunden (Standard: 10).</string>
     <string name="ConnectionTimeoutInvalid">Bitte eine positive ganze Zahl eingeben.</string>
+    <string name="ConnectionApiPageSizePreferenceTitle">Maximale Einträge pro API-Anfrage</string>
+    <string name="ConnectionApiPageSizePreferenceSummary">Maximal angeforderte Artikel oder echte Feeds pro Seite (Standard: 200). Backend-Grenzen können diesen Wert verringern. Labels und virtuelle Feeds sind ausgenommen; die Gesamtmenge bleibt unverändert.</string>
+    <string name="ConnectionPageSizeInvalid">Bitte eine ganze Zahl von 1 bis 2147483647 eingeben.</string>
     <string name="ConnectionSslPreferenceCategoryTitle">SSL-Einstellungen</string>
     <string name="ConnectionSslPreferenceSummary">Alle SSL-Zertifikate akzeptieren.</string>
     <string name="ConnectionTrustHostsPreferenceTitle">Vertraue allen Servern</string>

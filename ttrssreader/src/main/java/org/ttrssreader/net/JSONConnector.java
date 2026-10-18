@@ -81,7 +81,6 @@ public class JSONConnector {
 	private static final String PARAM_FEED_URL = "feed_url";
 	private static final String PARAM_ARTICLE_IDS = "article_ids";
 	private static final String PARAM_LIMIT = "limit";
-	private static final int PARAM_LIMIT_API_5 = 60;
 	private static final String PARAM_VIEWMODE = "view_mode";
 	private static final String PARAM_SHOW_CONTENT = "show_content";
 	// include_attachments available since 1.5.3 but is ignored on older versions
@@ -89,6 +88,7 @@ public class JSONConnector {
 	private static final String PARAM_SINCE_ID = "since_id";
 	private static final String PARAM_SEARCH = "search";
 	private static final String PARAM_SKIP = "skip";
+	private static final String PARAM_OFFSET = "offset";
 	private static final String PARAM_MODE = "mode";
 	// 0-starred, 1-published, 2-unread, 3-article note (since api level 1)
 	private static final String PARAM_FIELD = "field";
@@ -481,64 +481,73 @@ public class JSONConnector {
 
 		// Check if content contains array or object, array indicates login-response or error, object is content
 		JsonReader reader = new JsonReader(in);
-		reader.beginObject();
+		boolean handedOff = false;
+		try {
+			reader.beginObject();
 
-		while (reader.hasNext()) {
-			String name = reader.nextName();
-			if (name.equals("content")) {
-				JsonToken t = reader.peek();
+			while (reader.hasNext()) {
+				String name = reader.nextName();
+				if (name.equals("content")) {
+					JsonToken t = reader.peek();
 
-				if (t.equals(JsonToken.BEGIN_ARRAY)) {
-					return reader;
-				} else if (t.equals(JsonToken.BEGIN_OBJECT)) {
-
-					JsonObject object = new JsonObject();
-					reader.beginObject();
-
-					String nextName = reader.nextName();
-					// We have a BEGIN_OBJECT here but its just the response to call "subscribeToFeed" or "isLoggedIn"
-					if ("status".equals(nextName))
+					if (t.equals(JsonToken.BEGIN_ARRAY)) {
+						handedOff = true;
 						return reader;
+					} else if (t.equals(JsonToken.BEGIN_OBJECT)) {
 
-					// Handle error
-					while (reader.hasNext()) {
-						if (nextName != null) {
-							object.addProperty(nextName, reader.nextString());
-							nextName = null;
-						} else {
-							object.addProperty(reader.nextName(), reader.nextString());
+						JsonObject object = new JsonObject();
+						reader.beginObject();
+
+						String nextName = reader.nextName();
+						// We have a BEGIN_OBJECT here but its just the response to call "subscribeToFeed" or "isLoggedIn"
+						if ("status".equals(nextName)) {
+							handedOff = true;
+							return reader;
 						}
-					}
-					reader.endObject();
 
-					if (object.get(ERROR) != null) {
-						String message = object.get(ERROR).toString();
+						// Handle error
+						while (reader.hasNext()) {
+							if (nextName != null) {
+								object.addProperty(nextName, reader.nextString());
+								nextName = null;
+							} else {
+								object.addProperty(reader.nextName(), reader.nextString());
+							}
+						}
+						reader.endObject();
 
-						if (message.contains(NOT_LOGGED_IN)) {
-							lastError = NOT_LOGGED_IN;
-							if (firstCall && internalLogin() && !hasLastError)
-								return prepareReader(params, false); // Just do the same request again
-							else
+						if (object.get(ERROR) != null) {
+							String message = object.get(ERROR).toString();
+
+							if (message.contains(NOT_LOGGED_IN)) {
+								lastError = NOT_LOGGED_IN;
+								if (firstCall && internalLogin() && !hasLastError)
+									return prepareReader(params, false); // Just do the same request again
+								else
+									return null;
+							}
+
+							if (message.contains(API_DISABLED)) {
+								hasLastError = true;
+								lastError = MyApplication.context().getString(R.string.Error_ApiDisabled, Controller.getInstance().username());
 								return null;
-						}
+							}
 
-						if (message.contains(API_DISABLED)) {
+							// Any other error
 							hasLastError = true;
-							lastError = MyApplication.context().getString(R.string.Error_ApiDisabled, Controller.getInstance().username());
-							return null;
+							lastError = message;
 						}
-
-						// Any other error
-						hasLastError = true;
-						lastError = message;
 					}
-				}
 
-			} else {
-				reader.skipValue();
+				} else {
+					reader.skipValue();
+				}
 			}
+			return null;
+		} finally {
+			if (!handedOff)
+				reader.close();
 		}
-		return null;
 	}
 
 	private boolean sessionNotAlive() {
@@ -692,9 +701,11 @@ public class JSONConnector {
 	 * @param reader   JSON-reader, containing articles (received from server)
 	 * @param filter   filter for articles, defining which articles should be omitted while parsing (may be {@code
 	 *                 null})
+	 * @param pageIds raw article IDs, including omitted articles, for detecting repeated pages
 	 * @return amount of processed articles
 	 */
-	private int parseArticleArray(final Set<Article> articles, JsonReader reader, IArticleOmitter filter) {
+	private int parseArticleArray(final Set<Article> articles, JsonReader reader, IArticleOmitter filter,
+								 Set<Integer> pageIds) throws IOException {
 		int count = 0;
 
 		try {
@@ -705,6 +716,7 @@ public class JSONConnector {
 				reader.beginObject();
 				boolean skipObject = parseArticle(article, reader, filter);
 				reader.endObject();
+				pageIds.add(article.id);
 
 				if (!skipObject && article.id != -1 && article.title != null)
 					articles.add(article);
@@ -714,9 +726,7 @@ public class JSONConnector {
 			reader.endArray();
 		} catch (OutOfMemoryError e) {
 			Controller.getInstance().lowMemory(true); // Low memory detected
-		} catch (Exception e) {
-			if (!RequestDiagnostics.isTimeout(e))
-				Log.e(TAG, "Input data could not be read: " + e.getMessage() + " (" + e.getCause() + ")", e);
+			reportPageFailure("getHeadlines: insufficient memory");
 		}
 
 		return count;
@@ -726,15 +736,12 @@ public class JSONConnector {
 
 		boolean skipObject = false;
 		while (reader.hasNext() && reader.peek().equals(JsonToken.NAME)) {
-			if (skipObject) {
-				// field name
-				reader.skipValue();
-				// field value
+			String name = reader.nextName();
+			// Even omitted articles need their raw ID for pagination progress checks.
+			if (skipObject && !ID.equals(name)) {
 				reader.skipValue();
 				continue;
 			}
-
-			String name = reader.nextName();
 
 			try {
 				Article.ArticleField field = Article.ArticleField.valueOf(name);
@@ -806,10 +813,10 @@ public class JSONConnector {
 						continue;
 				}
 
-				if (filter != null)
+				if (filter != null && !skipObject)
 					skipObject = filter.omitArticle(field, a);
 
-			} catch (IllegalArgumentException | IOException e) {
+			} catch (IllegalArgumentException e) {
 				Log.w(TAG, "Result contained illegal value for entry \"" + name + "\".");
 				reader.skipValue();
 			}
@@ -946,78 +953,95 @@ public class JSONConnector {
 		if (!tolerateWrongUnreadInformation) {
 			makeLazyServerWork();
 		}
+		if (hasLastError)
+			return ret;
 
-		Map<String, String> params = new HashMap<>();
-		params.put(PARAM_OP, VALUE_GET_FEEDS);
-		params.put(PARAM_CAT_ID, Data.VCAT_ALL + ""); // Hardcoded -4 fetches all feeds. See
-		// http://tt-rss.org/redmine/wiki/tt-rss/JsonApiReference#getFeeds
-
-		try (JsonReader reader = prepareReader(params)) {
-			if (reader == null)
-				return ret;
-
-			reader.beginArray();
-			while (reader.hasNext()) {
-
-				int categoryId = -1;
-				int id = 0;
-				String title = null;
-				String feedUrl = null;
-				int unread = 0;
-
-				reader.beginObject();
+		int pageSize = Controller.getInstance().apiPageSize();
+		int offset = 0;
+		while (true) {
+			Map<String, String> params = new HashMap<>();
+			params.put(PARAM_OP, VALUE_GET_FEEDS);
+			params.put(PARAM_CAT_ID, String.valueOf(Data.VCAT_ALL));
+			params.put(PARAM_LIMIT, String.valueOf(pageSize));
+			params.put(PARAM_OFFSET, String.valueOf(offset));
+			int count = 0;
+			int added = 0;
+			try (JsonReader reader = prepareReader(params, false)) {
+				if (reader == null || hasLastError) {
+					reportPageFailure("getFeeds: missing page response");
+					ret.clear();
+					return ret;
+				}
+				reader.beginArray();
 				while (reader.hasNext()) {
-
-					try {
-						switch (reader.nextName()) {
-							case ID:
-								id = reader.nextInt();
-								break;
-							case CAT_ID:
-								categoryId = reader.nextInt();
-								break;
-							case TITLE:
-								title = reader.nextString();
-								break;
-							case FEED_URL:
-								feedUrl = reader.nextString();
-								break;
-							case UNREAD:
-								unread = reader.nextInt();
-								break;
-							default:
-								reader.skipValue();
-								break;
-						}
-					} catch (IllegalArgumentException e) {
-						Log.e(TAG, (e.getMessage() != null ? e.getMessage() : "no exception message available"));
-						reader.skipValue();
-					}
-
+					Feed feed = readFeed(reader);
+					boolean realFeed = feed.id > 0;
+					if (realFeed)
+						count++;
+					// Backend limit/offset excludes the metadata prepended to every page.
+					if ((realFeed || offset == 0) && (feed.id != -1 || feed.categoryId == -2)
+							&& ret.add(feed) && realFeed)
+						added++;
 				}
-				reader.endObject();
-
-				if (id != -1 || categoryId == -2) { // normal feed (>0) or label (-2)
-					if (title != null) {
-						Feed f = new Feed();
-						f.id = id;
-						f.categoryId = categoryId;
-						f.title = title;
-						f.url = feedUrl;
-						f.unread = unread;
-						ret.add(f);
-					}
-				}
-
+				reader.endArray();
+			} catch (IOException | IllegalStateException | NumberFormatException e) {
+				reportPageFailure("getFeeds: could not read page (" + e.getClass().getSimpleName() + ")");
+				ret.clear();
+				return ret;
 			}
-			reader.endArray();
-		} catch (IOException e) {
-			if (!RequestDiagnostics.isTimeout(e))
-				Log.e(TAG, (e.getMessage() != null ? e.getMessage() : "no exception message available"));
+			if (count < pageSize)
+				break;
+			if (added == 0 || offset > Integer.MAX_VALUE - count) {
+				reportPageFailure("getFeeds: pagination made no progress or exceeded the offset range");
+				ret.clear();
+				return ret;
+			}
+			offset += count;
 		}
 
 		Log.d(TAG, "getFeeds: " + (System.currentTimeMillis() - time) + "ms");
 		return ret;
+	}
+
+	private Feed readFeed(JsonReader reader) throws IOException {
+		Feed feed = new Feed();
+		feed.categoryId = -1;
+		reader.beginObject();
+		while (reader.hasNext()) {
+			switch (reader.nextName()) {
+				case ID:
+					feed.id = reader.nextInt();
+					break;
+				case CAT_ID:
+					feed.categoryId = reader.nextInt();
+					break;
+				case TITLE:
+					feed.title = reader.nextString();
+					break;
+				case FEED_URL:
+					feed.url = reader.nextString();
+					break;
+				case UNREAD:
+					feed.unread = reader.nextInt();
+					break;
+				default:
+					reader.skipValue();
+					break;
+			}
+		}
+		reader.endObject();
+		if (feed.id == 0 || feed.title == null)
+			throw new IOException("Invalid feed record");
+		return feed;
+	}
+
+	private void reportPageFailure(String message) {
+		if (hasLastError)
+			return;
+		hasLastError = true;
+		if (!NOT_LOGGED_IN.equals(lastError))
+			lastError = message;
+		Log.e(TAG, lastError);
 	}
 
 	/**
@@ -1071,16 +1095,20 @@ public class JSONConnector {
 		long time = System.currentTimeMillis();
 		int offset = 0;
 		int count;
-		int maxSize = articles.size() + limit;
+		long maxSize = (long) articles.size() + limit;
 
 		if (sessionNotAlive())
 			return;
 
-		int limitParam = Math.min((apiLevel < 6) ? PARAM_LIMIT_API_5 : PARAM_LIMIT_MAX_VALUE, limit);
+		int pageSize = Controller.getInstance().apiPageSize();
+		Set<Integer> previousPageIds = null;
 
 		makeLazyServerWork(id);
+		if (hasLastError)
+			return;
 
 		while (articles.size() < maxSize) {
+			int limitParam = ApiPageSize.headlineLimit(pageSize, apiLevel, maxSize - articles.size());
 
 			Map<String, String> params = new HashMap<>();
 			params.put(PARAM_OP, VALUE_GET_HEADLINES);
@@ -1096,25 +1124,30 @@ public class JSONConnector {
 			if (search != null)
 				params.put(PARAM_SEARCH, search);
 
-			try (JsonReader reader = prepareReader(params)) {
+			try (JsonReader reader = prepareReader(params, false)) {
 
+				if (reader == null || hasLastError) {
+					reportPageFailure("getHeadlines: missing page response");
+					return;
+				}
+
+				Set<Integer> pageIds = new LinkedHashSet<>();
+				count = parseArticleArray(articles, reader, filter, pageIds);
 				if (hasLastError)
 					return;
-				if (reader == null)
-					continue;
-
-				count = parseArticleArray(articles, reader, filter);
 
 				if (count < limitParam)
 					break;
-				else
-					offset += count;
-
-			} catch (IOException e) {
-				if (!RequestDiagnostics.isTimeout(e))
-					e.printStackTrace();
+				if (pageIds.equals(previousPageIds) || offset > Integer.MAX_VALUE - count) {
+					reportPageFailure("getHeadlines: pagination made no progress or exceeded the offset range");
+					return;
+				}
+				previousPageIds = pageIds;
+				offset += count;
+			} catch (IOException | IllegalStateException | NumberFormatException e) {
+				reportPageFailure("getHeadlines: could not read page (" + e.getClass().getSimpleName() + ")");
+				return;
 			}
-			// Empty!
 		}
 
 		Log.d(TAG, "getHeadlines: " + (System.currentTimeMillis() - time) + "ms");

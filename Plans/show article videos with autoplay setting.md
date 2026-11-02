@@ -94,6 +94,10 @@ which the manifest already enables. The ICS workaround no longer applies because
 `minSdkVersion` is 23. There is no unit test because this is a WebView rendering
 change; it is covered by the manual tests below.
 
+Validation: run `41537328693` on commit `56e8f926` succeeded (unit tests, APK
+build, identity and signing checks). Artifacts are in
+`downloaded-apk/run-41537328693/` (zip plus the fdroid and play debug APKs).
+
 ## Limitations
 - The autoplay setting applies when an article view is created; an open article
   keeps its state until reopened.

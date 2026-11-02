@@ -104,7 +104,12 @@ build, identity and signing checks). Artifacts are in
 - Video playback depends on the device WebView's codec support for the source
   file (article 314961 declares `type="video/mp4"` for its `.mov` URL).
 
-## Manual tests (pending)
+## Merge
+`master` (with the `install-latest-apk` skill) was merged into this branch first;
+CI run `41538282066` on merge commit `1f3fe1fe` succeeded. The user then reported
+that the changes work ("changes working. merge to master") and approved the merge.
+
+## Manual tests (passed)
 - Install the CI APK over the existing installation and confirm settings are kept.
 - Article 314961 shows the video and autoplays (muted) by default. The picture
   stays visible while playing and paused, after the controls hide.

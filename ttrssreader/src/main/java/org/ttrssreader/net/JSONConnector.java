@@ -38,6 +38,7 @@ import org.ttrssreader.model.pojos.Category;
 import org.ttrssreader.model.pojos.Feed;
 import org.ttrssreader.model.pojos.Label;
 import org.ttrssreader.preferences.Constants;
+import org.ttrssreader.utils.ArticleContentSanitizer;
 import org.ttrssreader.utils.SSLUtils;
 import org.ttrssreader.utils.StringSupport;
 import org.ttrssreader.utils.Utils;
@@ -769,7 +770,7 @@ public class JSONConnector {
 							a.feedId = reader.nextInt();
 						break;
 					case content:
-						a.content = reader.nextString().replaceAll("(<(?:img|video)[^>]+?src=[\"'])//([^\"']*)", "$1https://$2");
+						a.content = ArticleContentSanitizer.normalizeProtocolRelativeUrls(reader.nextString());
 						break;
 					case link:
 						a.url = reader.nextString();

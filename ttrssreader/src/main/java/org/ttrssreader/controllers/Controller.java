@@ -815,6 +815,10 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 		return prefs.getBoolean(SAVE_IMAGE_ON_TRIPLE_TAP, SAVE_IMAGE_ON_TRIPLE_TAP_DEFAULT);
 	}
 
+	public boolean autoplayVideos() {
+		return prefs.getBoolean(AUTOPLAY_VIDEOS, AUTOPLAY_VIDEOS_DEFAULT);
+	}
+
 	public String mediaSaveFolder() {
 		return prefs.getString(MEDIA_SAVE_FOLDER, Constants.EMPTY);
 	}

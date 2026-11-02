@@ -71,6 +71,8 @@
     <string name="ArticleActivity_MediaSaveFailed">Could not save media: %1$s</string>
     <string name="SaveImageOnTripleTapTitle">Save image on triple-tap</string>
     <string name="SaveImageOnTripleTapSummary">Save an image to the selected media folder when triple-tapped. Double-tap continues to toggle the article star.</string>
+    <string name="AutoplayVideosTitle">Autoplay videos</string>
+    <string name="AutoplayVideosSummary">Start videos in articles automatically when the article sets autoplay. Uncheck to start videos only with the play button.</string>
     <string name="MediaSaveFolderTitle">Media save folder</string>
     <string name="MediaSaveFolderNotSelected">Choose a folder for saved images and videos. You will also be asked on first save.</string>
     <string name="MediaSaveFolderSelected">%1$s — tap to change the folder</string>

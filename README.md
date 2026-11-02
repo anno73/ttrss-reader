@@ -178,6 +178,7 @@ installation failure from a signer mismatch.
  * Use Swipe for Next/Previous Article
  * Swipe-Area in bottom area of the Article-View to avoid swiping while scrolling
  * Show or download images/videos/music attached to Articles
+ * Play videos embedded in articles inline, with optional autoplay
  * Save article images and videos to a folder selected with the system folder picker
  * Share URL via Twitter/SMS/Mail
  * Mark everything (whole category or all categories) as read
@@ -202,6 +203,18 @@ Cancelling the picker cancels the pending save. If folder access is lost, the ne
 save explains the problem and asks for a folder again. No broad storage permission
 is needed for this feature; Android still restricts which folders can be selected.
 The separate attachment-download location setting is unchanged.
+
+# Article videos
+HTML5 videos embedded in articles (`<video>` with `src` or `<source>` children,
+optionally wrapped in `<figure>`) are shown inline with their poster and player
+controls. Only `http`/`https` media URLs are kept; scripts and event handlers are
+still removed. Videos stream from their origin and are not added to the image cache.
+
+**Settings > Usage > Autoplay videos** is enabled by default and lets videos that
+request autoplay start on their own (feeds usually combine autoplay with muted).
+Disable it to start videos only with the play button. The option is unavailable
+while **Load media** is off. Existing installations get the default after updating;
+no settings are migrated or reset. The change applies to newly opened articles.
 
 # Automatic synchronization
 Under **Settings > System**, **Sync on startup and resume** is enabled by default.

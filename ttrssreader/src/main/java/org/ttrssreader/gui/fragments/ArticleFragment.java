@@ -64,7 +64,6 @@ import org.htmlcleaner.TagNode;
 import org.htmlcleaner.TagNodeVisitor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
-import org.jsoup.safety.Safelist;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.stringtemplate.v4.ST;
@@ -93,6 +92,7 @@ import org.ttrssreader.model.updaters.PublishedStateUpdater;
 import org.ttrssreader.model.updaters.StarredStateUpdater;
 import org.ttrssreader.model.updaters.Updater;
 import org.ttrssreader.preferences.Constants;
+import org.ttrssreader.utils.ArticleContentSanitizer;
 import org.ttrssreader.utils.AsyncTask;
 import org.ttrssreader.utils.DateUtils;
 import org.ttrssreader.utils.FileUtils;
@@ -430,7 +430,6 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			webView.setScrollbarFadingEnabled(true);
 			webView.setOnKeyListener(keyListener);
 			webView.getSettings().setTextZoom(Controller.getInstance().textZoom());
-			webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
 			if (gestureDetector == null || gestureListener == null) {
 				ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
@@ -572,8 +571,8 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			} else {
 				webView.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
 			}
-			if (!Controller.getInstance().loadMedia())
-				webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+			boolean autoplayVideos = Controller.getInstance().autoplayVideos();
+			webView.getSettings().setMediaPlaybackRequiresUserGesture(!autoplayVideos);
 
 			// No need to reload everything
 			if (webviewInitialized)
@@ -601,7 +600,7 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			}
 
 			// Remove all html tags and content that doesn't meet this set of allowed stuff
-			final String contentClean = Jsoup.clean(article.content, Safelist.relaxed());
+			final String contentClean = ArticleContentSanitizer.clean(article.content, autoplayVideos);
 
 			// Load html from Controller and insert content// Article-Prefetch-Stuff from Raw-Ressources and System
 			ST htmlTmpl = new ST(getString(R.string.HTML_TEMPLATE), '$', '$');

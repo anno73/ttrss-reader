@@ -39,21 +39,38 @@ is unchanged.
   not repository files.
 - No local project compilation, Gradle tasks, or project tests were run.
 
-## CI, distribution, and remaining work
+## CI and distribution
 
-Commit and push the task files, verify the Android CI workflow, then retain
-the downloaded ZIP and extract both APKs into:
+- Committed the icons and this plan as
+  `cf78f82acc9b8a01b4e0b592581a5fb7d885fe7a`, pushed the task branch, and
+  verified that the remote commit matched.
+- [Android CI run 41522544589](https://github.com/anno73/ttrss-reader/actions/runs/41522544589)
+  succeeded for that exact commit. Both jobs passed, including unit tests,
+  both debug APK builds, and package/version/provider/signing verification.
+- Downloaded the original `ttrss-reader-debug.zip` and extracted it directly
+  into the run directory, preserving archive paths. Verified that the ZIP and
+  both APKs exist:
 
 ```text
-downloaded-apk/run-{RUN-ID}/
+downloaded-apk/run-41522544589/
   ttrss-reader-debug.zip
   ttrssreader/build/outputs/apk/
     fdroid/debug/ttrssreader-fdroid-debug.apk
     play/debug/ttrssreader-play-debug.apk
 ```
 
-CI run and artifact verification are pending the initial task push. Record the
-actual result here after verification. Generated artifacts must not be committed.
+- Opened both APK archives and verified that all four packaged icon densities
+  match the edited source pixels exactly after RGBA decoding.
+- Confirmed downloaded artifacts are ignored by Git; they are not committed.
+- Recorded this final validation in a documentation-only follow-up commit with
+  `[skip ci]`; no app files changed after the successful CI run.
 
-Manual device tests are pending. Do not merge until those tests pass and the
-user explicitly approves the merge.
+## Limitations and manual testing
+
+- CI reported an existing non-blocking Node.js 20 deprecation warning for
+  `actions/checkout@v4`; the workflow succeeded.
+- Manual device tests are pending. Install the appropriate APK, check the
+  launcher and in-app icon for the blue dot, unchanged t and orange waves, and
+  clean edges at the device's density.
+- No merge was performed. Ask for the manual-test result; merge only after
+  passing tests and explicit user approval.

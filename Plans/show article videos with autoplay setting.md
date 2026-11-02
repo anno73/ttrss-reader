@@ -63,8 +63,23 @@ The backend content was correct. The app removed the video before rendering.
 6. Docs: README "Article videos" section and feature list; CHANGELOG entry.
 
 ## Validation
-CI only (`.github/workflows/android-build.yml`); no local builds. Results are
-recorded below once the run completes.
+- CI only (`.github/workflows/android-build.yml`); no local builds.
+- Run `41535133857` on commit `8e6cc395` succeeded:
+  - The `ttrss-skill` job and the Android job passed.
+  - `compileFdroidDebugUnitTestJavaWithJavac` and `testFdroidDebugUnitTest` ran,
+    including `ArticleContentSanitizerTest` and `AutoplayVideosPreferenceTest`.
+  - The debug APK was built, and its version, package, provider and signing
+    checks passed.
+- Artifacts downloaded to `downloaded-apk/run-41535133857/`:
+  - `ttrss-reader-debug.zip`
+  - `ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk`
+  - `ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk`
+
+## Limitations
+- The autoplay setting applies when an article view is created; an open article
+  keeps its state until reopened.
+- Video playback depends on the device WebView's codec support for the source
+  file (article 314961 declares `type="video/mp4"` for its `.mov` URL).
 
 ## Manual tests (pending)
 - Install the CI APK over the existing installation and confirm settings are kept.

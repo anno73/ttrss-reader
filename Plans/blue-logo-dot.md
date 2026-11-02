@@ -69,8 +69,7 @@ downloaded-apk/run-41522544589/
 
 - CI reported an existing non-blocking Node.js 20 deprecation warning for
   `actions/checkout@v4`; the workflow succeeded.
-- Manual device tests are pending. Install the appropriate APK, check the
-  launcher and in-app icon for the blue dot, unchanged t and orange waves, and
-  clean edges at the device's density.
-- No merge was performed. Ask for the manual-test result; merge only after
-  passing tests and explicit user approval.
+- The user reported manual device tests passed after being asked to check the
+  blue dot, unchanged t and orange waves, and edge quality.
+- No merge was performed. Manual tests have passed; explicit user approval
+  to merge is still required.

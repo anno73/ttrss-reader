@@ -75,6 +75,25 @@ The backend content was correct. The app removed the video before rendering.
   - `ttrssreader/build/outputs/apk/fdroid/debug/ttrssreader-fdroid-debug.apk`
   - `ttrssreader/build/outputs/apk/play/debug/ttrssreader-play-debug.apk`
 
+## Follow-up: video picture fades out during playback
+Manual test of run `41535133857`:
+- Videos appeared and sound played.
+- During playback the picture faded to the background color within seconds,
+  from the top down to the black control bar.
+- A paused video showed the player but no image.
+- Touching the video brought the player back.
+
+Cause: `ArticleFragment.initUI()` set
+`webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)`. This was added in 2013
+(commit `7be8b3ee`, "prevent flicker in ics", Android 4.0). A software-layer
+WebView cannot composite video frames, which are hardware surfaces, so only the
+controls overlay and its gradient were drawn. Audio was unaffected.
+
+Fix: removed the software layer. The WebView now inherits hardware acceleration,
+which the manifest already enables. The ICS workaround no longer applies because
+`minSdkVersion` is 23. There is no unit test because this is a WebView rendering
+change; it is covered by the manual tests below.
+
 ## Limitations
 - The autoplay setting applies when an article view is created; an open article
   keeps its state until reopened.
@@ -83,7 +102,10 @@ The backend content was correct. The app removed the video before rendering.
 
 ## Manual tests (pending)
 - Install the CI APK over the existing installation and confirm settings are kept.
-- Article 314961 shows the video and autoplays (muted) by default.
+- Article 314961 shows the video and autoplays (muted) by default. The picture
+  stays visible while playing and paused, after the controls hide.
+- Scrolling, zooming and text rendering in articles show no flicker or artifacts
+  with hardware rendering.
 - With **Autoplay videos** off, the poster and play button show and the video
   starts only on tap (reopen the article after changing the setting).
 - Images still render; cached images and long-press/triple-tap save still work.

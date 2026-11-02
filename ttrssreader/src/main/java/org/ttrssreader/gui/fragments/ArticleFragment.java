@@ -430,7 +430,6 @@ public class ArticleFragment extends Fragment implements TextInputAlertCallback 
 			webView.setScrollbarFadingEnabled(true);
 			webView.setOnKeyListener(keyListener);
 			webView.getSettings().setTextZoom(Controller.getInstance().textZoom());
-			webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
 			if (gestureDetector == null || gestureListener == null) {
 				ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();

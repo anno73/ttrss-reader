@@ -85,6 +85,7 @@ public class Constants {
 	public static final String HIDE_FEED_READ_BUTTONS = "HideFeedReadButtons";
 	public static final String SWIPE_ARTICLE_MARK_READ = "SwipeArticleMarkRead";
 	public static final String SAVE_IMAGE_ON_TRIPLE_TAP = "SaveImageOnTripleTap";
+	public static final String AUTOPLAY_VIDEOS = "AutoplayVideosPreference";
 	public static final String MEDIA_SAVE_FOLDER = "MediaSaveFolder";
 	// Usage Default Values
 	public static final boolean OPEN_URL_EMPTY_ARTICLE_DEFAULT = false;
@@ -98,6 +99,7 @@ public class Constants {
 	public static final boolean HIDE_FEED_READ_BUTTONS_DEFAULT = false;
 	public static final boolean SWIPE_ARTICLE_MARK_READ_DEFAULT = false;
 	public static final boolean SAVE_IMAGE_ON_TRIPLE_TAP_DEFAULT = false;
+	public static final boolean AUTOPLAY_VIDEOS_DEFAULT = true;
 
 	// Display
 	public static final String THEME = "DisplayThemePreferenceAuto";

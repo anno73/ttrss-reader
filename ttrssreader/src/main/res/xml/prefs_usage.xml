@@ -58,6 +58,12 @@
             android:summary="@string/DisplayLoadImagesPreferenceSummary"
             android:title="@string/DisplayLoadImagesPreferenceTitle"/>
         <CheckBoxPreference
+            android:defaultValue="true"
+            android:dependency="DisplayLoadImagesPreference"
+            android:key="AutoplayVideosPreference"
+            android:summary="@string/AutoplayVideosSummary"
+            android:title="@string/AutoplayVideosTitle"/>
+        <CheckBoxPreference
             android:defaultValue="false"
             android:key="InvertBrowseArticlesPreference"
             android:summary="@string/InvertBrowseArticlesPreferenceSummary"

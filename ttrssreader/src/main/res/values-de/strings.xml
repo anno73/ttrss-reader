@@ -55,6 +55,8 @@ not, see http://www.gnu.org/licenses/.
     <string name="ArticleActivity_MediaSaveFailed">Medium konnte nicht gespeichert werden: %1$s</string>
     <string name="SaveImageOnTripleTapTitle">Bild mit Dreifachtipp speichern</string>
     <string name="SaveImageOnTripleTapSummary">Speichert ein Bild bei dreimaligem Tippen im gewählten Medienordner. Doppeltippen markiert weiterhin den Artikel.</string>
+    <string name="AutoplayVideosTitle">Videos automatisch abspielen</string>
+    <string name="AutoplayVideosSummary">Startet Videos in Artikeln automatisch, wenn der Artikel Autoplay vorsieht. Deaktivieren, um Videos nur über die Play-Taste zu starten.</string>
     <string name="MediaSaveFolderTitle">Speicherordner für Medien</string>
     <string name="MediaSaveFolderNotSelected">Ordner für gespeicherte Bilder und Videos wählen. Die Auswahl erscheint auch beim ersten Speichern.</string>
     <string name="MediaSaveFolderSelected">%1$s — antippen, um den Ordner zu ändern</string>

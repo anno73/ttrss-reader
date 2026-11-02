@@ -108,6 +108,8 @@ build, identity and signing checks). Artifacts are in
 `master` (with the `install-latest-apk` skill) was merged into this branch first;
 CI run `41538282066` on merge commit `1f3fe1fe` succeeded. The user then reported
 that the changes work ("changes working. merge to master") and approved the merge.
+Merged into `master` as `b700851f`; master CI run `41539180548` succeeded and its
+APKs are in `downloaded-apk/run-41539180548/` (zip plus fdroid and play debug APKs).
 
 ## Manual tests (passed)
 - Install the CI APK over the existing installation and confirm settings are kept.

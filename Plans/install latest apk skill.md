@@ -22,8 +22,9 @@ The skill documents:
 2. Added SKILL.md with inline PowerShell/gh/ADB procedures only.
 3. Reviewed frontmatter, skill naming, paths, command examples, source semantics,
    native-command error handling, preservation rules and scoped changes.
-4. Prepared the skill and this executed plan for commit/push; verify upstream
-   after pushing.
+4. Committed the skill and executed plan in `6697edb0`, pushed the task branch,
+   and verified the upstream commit exactly matches the local commit.
+   This final execution-record update is delivered in a follow-up commit.
 5. Leave manual skill execution and merge approval to the user.
 
 ## Validation and limitations

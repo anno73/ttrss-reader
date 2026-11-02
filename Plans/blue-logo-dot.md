@@ -71,5 +71,19 @@ downloaded-apk/run-41522544589/
   `actions/checkout@v4`; the workflow succeeded.
 - The user reported manual device tests passed after being asked to check the
   blue dot, unchanged t and orange waves, and edge quality.
-- No merge was performed. Manual tests have passed; explicit user approval
-  to merge is still required.
+- After reporting passed manual tests, the user explicitly approved merging
+  into master.
+
+## Approved merge
+
+- Merged `artwork/blue-logo-dot` into `master` as
+  `65fc25cbdef89ccd3c86ef2608098e12e01964df` and verified the push.
+- [Master Android CI run 41524045816](https://github.com/anno73/ttrss-reader/actions/runs/41524045816)
+  succeeded, including both jobs and APK verification.
+- Downloaded and retained the master run's ZIP at
+  `downloaded-apk/run-41524045816/ttrss-reader-debug.zip`, extracted directly into
+  the same run directory, and verified both expected APK paths.
+- Verified all four packaged icon densities in both master APKs match the
+  edited source pixels.
+- This final merge record is documentation-only; no app files changed after
+  the successful master build.

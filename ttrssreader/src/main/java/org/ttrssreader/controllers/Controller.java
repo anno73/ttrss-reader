@@ -487,6 +487,32 @@ public class Controller extends Constants implements OnSharedPreferenceChangeLis
 	}
 
 	/**
+	 * @return the length of the window for a partial sync, expressed in the unit from {@link #partialSyncUnit()}.
+	 */
+	public int partialSyncAmount() {
+		return positiveIntPref(Constants.PARTIAL_SYNC_AMOUNT, Constants.PARTIAL_SYNC_AMOUNT_DEFAULT);
+	}
+
+	/**
+	 * @return {@code "days"} or {@code "weeks"}
+	 */
+	public String partialSyncUnit() {
+		String key = getStringWithSSID(Constants.PARTIAL_SYNC_UNIT, getCurrentSSID(wifiManager), wifibasedPrefsEnabled());
+		String value = prefs.contains(key)
+				? prefs.getString(key, Constants.PARTIAL_SYNC_UNIT_DEFAULT)
+				: prefs.getString(Constants.PARTIAL_SYNC_UNIT, Constants.PARTIAL_SYNC_UNIT_DEFAULT);
+		return "weeks".equals(value) ? "weeks" : "days";
+	}
+
+	/**
+	 * @return the earliest article date (epoch millis) a partial sync should fetch.
+	 */
+	public long partialSyncCutoffMillis() {
+		long unitMillis = "weeks".equals(partialSyncUnit()) ? 7L * 24 * 60 * 60 * 1000 : 24L * 60 * 60 * 1000;
+		return System.currentTimeMillis() - partialSyncAmount() * unitMillis;
+	}
+
+	/**
 	 * @return the timeout for backend API calls in minutes, used instead of {@link #apiTimeoutSeconds()} when
 	 * {@link #lazyServer()} is enabled.
 	 */

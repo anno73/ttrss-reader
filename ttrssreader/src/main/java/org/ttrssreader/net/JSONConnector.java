@@ -87,6 +87,7 @@ public class JSONConnector {
 	// include_attachments available since 1.5.3 but is ignored on older versions
 	private static final String PARAM_INC_ATTACHMENTS = "include_attachments";
 	private static final String PARAM_SINCE_ID = "since_id";
+	private static final String PARAM_ORDER_BY = "order_by";
 	private static final String PARAM_SEARCH = "search";
 	private static final String PARAM_SKIP = "skip";
 	private static final String PARAM_OFFSET = "offset";
@@ -103,6 +104,8 @@ public class JSONConnector {
 	private static final String VALUE_GET_CATEGORIES = "getCategories";
 	private static final String VALUE_GET_FEEDS = "getFeeds";
 	private static final String VALUE_GET_HEADLINES = "getHeadlines";
+	// Newest first by article date; required for stopping a partial sync once a page is older than the cutoff
+	private static final String VALUE_ORDER_FEED_DATES = "feed_dates";
 	private static final String VALUE_UPDATE_ARTICLE = "updateArticle";
 	private static final String VALUE_CATCHUP = "catchupFeed";
 	private static final String VALUE_UPDATE_FEED = "updateFeed";
@@ -703,10 +706,14 @@ public class JSONConnector {
 	 * @param filter   filter for articles, defining which articles should be omitted while parsing (may be {@code
 	 *                 null})
 	 * @param pageIds raw article IDs, including omitted articles, for detecting repeated pages
+	 * @param pageIds raw article IDs, including omitted articles, for detecting repeated pages
+	 * @param cutoffMillis articles updated before this epoch-millis value are not added (0 disables the check)
+	 * @param pageOldest single-element holder, lowered to the oldest article update time seen on this page (may be
+	 *                   {@code null})
 	 * @return amount of processed articles
 	 */
 	private int parseArticleArray(final Set<Article> articles, JsonReader reader, IArticleOmitter filter,
-								 Set<Integer> pageIds) throws IOException {
+								 Set<Integer> pageIds, long cutoffMillis, long[] pageOldest) throws IOException {
 		int count = 0;
 
 		try {
@@ -718,6 +725,14 @@ public class JSONConnector {
 				boolean skipObject = parseArticle(article, reader, filter);
 				reader.endObject();
 				pageIds.add(article.id);
+
+				if (article.updated != null) {
+					long updated = article.updated.getTime();
+					if (pageOldest != null && updated < pageOldest[0])
+						pageOldest[0] = updated;
+					if (cutoffMillis > 0 && updated < cutoffMillis)
+						skipObject = true;
+				}
 
 				if (!skipObject && article.id != -1 && article.title != null)
 					articles.add(article);
@@ -1093,6 +1108,20 @@ public class JSONConnector {
 	 *                   null})
 	 */
 	public void getHeadlines(final Set<Article> articles, Integer id, int limit, String viewMode, boolean isCategory, Integer sinceId, String search, IArticleOmitter filter) {
+		fetchHeadlines(articles, id, limit, viewMode, isCategory, sinceId, search, filter, 0L);
+	}
+
+	/**
+	 * Retrieves articles updated at or after {@code cutoffMillis}, newest first. Paging stops as soon as a page reaches
+	 * an article older than the cutoff, because the API has no date-range filter.
+	 *
+	 * @param cutoffMillis earliest article update time to keep, in epoch milliseconds
+	 */
+	public void getHeadlinesSince(final Set<Article> articles, Integer id, int limit, String viewMode, boolean isCategory, long cutoffMillis) {
+		fetchHeadlines(articles, id, limit, viewMode, isCategory, 0, null, null, cutoffMillis);
+	}
+
+	private void fetchHeadlines(final Set<Article> articles, Integer id, int limit, String viewMode, boolean isCategory, Integer sinceId, String search, IArticleOmitter filter, long cutoffMillis) {
 		long time = System.currentTimeMillis();
 		int offset = 0;
 		int count;
@@ -1122,6 +1151,8 @@ public class JSONConnector {
 			params.put(PARAM_INC_ATTACHMENTS, "1");
 			if (sinceId > 0)
 				params.put(PARAM_SINCE_ID, sinceId + "");
+			if (cutoffMillis > 0)
+				params.put(PARAM_ORDER_BY, VALUE_ORDER_FEED_DATES);
 			if (search != null)
 				params.put(PARAM_SEARCH, search);
 
@@ -1133,11 +1164,14 @@ public class JSONConnector {
 				}
 
 				Set<Integer> pageIds = new LinkedHashSet<>();
-				count = parseArticleArray(articles, reader, filter, pageIds);
+				long[] pageOldest = {Long.MAX_VALUE};
+				count = parseArticleArray(articles, reader, filter, pageIds, cutoffMillis, pageOldest);
 				if (hasLastError)
 					return;
 
 				if (count < limitParam)
+					break;
+				if (cutoffMillis > 0 && pageOldest[0] < cutoffMillis)
 					break;
 				if (pageIds.equals(previousPageIds) || offset > Integer.MAX_VALUE - count) {
 					reportPageFailure("getHeadlines: pagination made no progress or exceeded the offset range");

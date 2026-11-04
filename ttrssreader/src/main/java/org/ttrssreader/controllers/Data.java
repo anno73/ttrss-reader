@@ -299,6 +299,42 @@ public class Data {
 	}
 
 	/**
+	 * Fetches only articles updated within the configured partial-sync window. Existing articles are kept.
+	 * Deliberately leaves the update throttle timestamps, the since-ID bookmark and the purge logic untouched, so a
+	 * later automatic or full update is not suppressed. Only real feeds/categories and {@link #VCAT_ALL} (all articles,
+	 * used from the category list) may use it; other virtual feeds/categories must use the full update.
+	 *
+	 * @param feedId            the id of the feed/category
+	 * @param displayOnlyUnread flag, that indicates, that only unread articles should be shown
+	 * @param isCat             if set to {@code true}, then {@code feedId} is actually the category ID
+	 * @param overrideOffline   should the "work offline" state be ignored?
+	 */
+	public void updateArticlesPartial(int feedId, boolean displayOnlyUnread, boolean isCat, boolean overrideOffline) {
+		if (!Utils.isConnected(cm) && !(overrideOffline && Utils.checkConnected(cm)))
+			return;
+
+		long timeStart = System.currentTimeMillis();
+
+		int limit = calculateLimit(feedId, isCat);
+		if (limit < FETCH_ARTICLES_LIMIT)
+			limit = FETCH_ARTICLES_LIMIT;
+		if (Controller.getInstance().isLowMemory())
+			limit = limit / 2;
+
+		String viewMode = (displayOnlyUnread ? VIEW_UNREAD : VIEW_ALL);
+		long cutoff = Controller.getInstance().partialSyncCutoffMillis();
+
+		Log.d(TAG, "UPDATE PARTIAL limit: " + limit + " cutoff: " + cutoff);
+		Set<Article> articles = new HashSet<>();
+		Controller.getInstance().getConnector().getHeadlinesSince(articles, feedId, limit, viewMode, isCat, cutoff);
+
+		handleInsertArticles(articles, false);
+		notifyListeners();
+
+		Log.d(TAG, "updateArticlesPartial() Took: " + (System.currentTimeMillis() - timeStart) + "ms");
+	}
+
+	/**
 	 * Calculate an appropriate upper limit for the number of articles
 	 */
 	private int calculateLimit(int feedId, boolean isCat) {

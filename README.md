@@ -226,6 +226,16 @@ Manual image caching, article fetching while browsing, and Tasker/Locale updates
 are unchanged. Disabling the setting does not cancel work already running or
 change backend request timeouts.
 
+# Manual refresh
+A single tap on **Refresh** fetches only articles from the partial-sync window, which is
+configured under **Settings > Connection** as an amount and a unit (days or weeks, default 7 days).
+Already cached articles are kept. Categories, feeds and counters are refreshed as before.
+Virtual categories and feeds always run the full sync.
+
+A long press on **Refresh** gives a short vibration and runs the full sync, as before.
+The long press works on the Refresh icon in the top bar only; if Refresh is in the overflow
+menu, use a single tap for a partial sync or move the item into the top bar for the full sync.
+
 # API timeouts
 Under **Settings > Connection** two numeric settings control the HTTP timeout of
 all backend API calls (connect, read and write):

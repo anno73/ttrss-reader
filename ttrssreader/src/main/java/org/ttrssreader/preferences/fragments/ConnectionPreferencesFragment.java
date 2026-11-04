@@ -31,6 +31,7 @@ public class ConnectionPreferencesFragment extends PreferenceFragmentCompat {
 		configureIntegerPreference(Constants.API_TIMEOUT, R.string.ConnectionTimeoutInvalid);
 		configureIntegerPreference(Constants.LAZY_SERVER_TIMEOUT, R.string.ConnectionTimeoutInvalid);
 		configureIntegerPreference(Constants.API_PAGE_SIZE, R.string.ConnectionPageSizeInvalid);
+		configureIntegerPreference(Constants.PARTIAL_SYNC_AMOUNT, R.string.ConnectionPartialSyncInvalid);
 
 		WifiPreferencesFragment.tryInitializeWifiPrefs(getContext(), getArguments(), getPreferenceScreen());
 

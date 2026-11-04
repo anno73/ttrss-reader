@@ -60,7 +60,7 @@ public class CategoryActivity extends MenuActivity implements IItemSelectedListe
 	private static final int SELECTED_LABEL = 3;
 
 	private boolean cacherStarted = false;
-	private CategoryUpdater categoryUpdater = null;
+	private ActivityUpdater categoryUpdater = null;
 
 	private static final String SELECTED = "SELECTED";
 	private int selectedCategoryId = Integer.MIN_VALUE;
@@ -219,6 +219,26 @@ public class CategoryActivity extends MenuActivity implements IItemSelectedListe
 		}
 	}
 
+	/**
+	 * Single tap on refresh: fetches only articles of the configured partial-sync window, then refreshes categories,
+	 * feeds and counters. Virtual categories are not included; use the long press for a full sync.
+	 */
+	@Override
+	protected void doPartialUpdate() {
+		if (categoryUpdater != null) {
+			if (categoryUpdater.getStatus().equals(AsyncTask.Status.FINISHED)) {
+				categoryUpdater = null;
+			} else {
+				return;
+			}
+		}
+
+		if (Data.getInstance().isConnected() && !isCacherRunning()) {
+			categoryUpdater = new CategoryPartialUpdater();
+			categoryUpdater.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		}
+	}
+
 	@Override
 	public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
 		boolean ret = super.onPrepareOptionsMenu(menu);
@@ -238,11 +258,45 @@ public class CategoryActivity extends MenuActivity implements IItemSelectedListe
 			return true;
 
 		if (item.getItemId() == R.id.Menu_Refresh) {
-			doUpdate(true);
+			doPartialUpdate();
 			return true;
 		}
 
 		return false;
+	}
+
+	/**
+	 * Partial update triggered by a single tap: fetches only articles of the partial-sync window for all categories,
+	 * then refreshes categories, feeds and counters. No labels, virtual categories or purge runs here.
+	 */
+	private class CategoryPartialUpdater extends ActivityUpdater {
+		private static final int TASK_COUNT = 4;
+
+		private CategoryPartialUpdater() {
+			super(true);
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			taskCount = TASK_COUNT;
+			int progress = 0;
+			publishProgress(progress);
+
+			Data.getInstance().updateArticlesPartial(Data.VCAT_ALL, false, false, true);
+			publishProgress(++progress);
+
+			Data.getInstance().updateCategories(false);
+			publishProgress(++progress);
+
+			Data.getInstance().updateFeeds(Data.VCAT_ALL, false);
+			publishProgress(++progress);
+
+			Data.getInstance().calculateCounters();
+			Data.getInstance().notifyListeners();
+			publishProgress(Integer.MAX_VALUE);
+
+			return null;
+		}
 	}
 
 	/**

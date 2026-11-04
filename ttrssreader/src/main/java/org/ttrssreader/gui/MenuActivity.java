@@ -64,6 +64,7 @@ import org.ttrssreader.utils.Utils;
 import java.lang.reflect.Field;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -347,6 +348,7 @@ public abstract class MenuActivity extends MenuFlavorActivity implements IUpdate
 	@Override
 	public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
 		super.onPrepareOptionsMenu(menu);
+		attachRefreshLongPress();
 
 		MenuItem offline = menu.findItem(R.id.Menu_WorkOffline);
 		MenuItem refresh = menu.findItem(R.id.Menu_Refresh);
@@ -603,6 +605,49 @@ public abstract class MenuActivity extends MenuFlavorActivity implements IUpdate
 	}
 
 	protected abstract void doUpdate(boolean forceUpdate);
+
+	/**
+	 * Single tap on the refresh item. Activities that support a partial sync override this; the default is a full
+	 * update.
+	 */
+	protected void doPartialUpdate() {
+		doUpdate(true);
+	}
+
+	/**
+	 * Makes a long press on the action-bar refresh item run a full update after a short vibration. Items moved into
+	 * the overflow menu are not covered. The view is looked up after layout, and the call is repeated on every menu
+	 * preparation because the action views are recreated.
+	 */
+	private void attachRefreshLongPress() {
+		getWindow().getDecorView().post(() -> {
+			View refreshView = findRefreshItemView(getWindow().getDecorView());
+			if (refreshView != null) {
+				refreshView.setOnLongClickListener(v -> {
+					Utils.alert(this);
+					doUpdate(true);
+					return true;
+				});
+			}
+		});
+	}
+
+	private static View findRefreshItemView(View view) {
+		if (view instanceof ActionMenuItemView) {
+			ActionMenuItemView item = (ActionMenuItemView) view;
+			if (item.getItemData() != null && item.getItemData().getItemId() == R.id.Menu_Refresh)
+				return view;
+		}
+		if (view instanceof ViewGroup) {
+			ViewGroup group = (ViewGroup) view;
+			for (int i = 0; i < group.getChildCount(); i++) {
+				View found = findRefreshItemView(group.getChildAt(i));
+				if (found != null)
+					return found;
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Can be used in child activities to update their data and get a UI refresh afterwards.

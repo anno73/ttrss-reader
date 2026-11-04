@@ -53,7 +53,7 @@ public class FeedHeadlineActivity extends MenuActivity {
 	private boolean selectArticlesForCategory = false;
 	private int articleId = Integer.MIN_VALUE;
 
-	private FeedHeadlineUpdater headlineUpdater = null;
+	private ActivityUpdater headlineUpdater = null;
 
 
 	@Override
@@ -180,6 +180,32 @@ public class FeedHeadlineActivity extends MenuActivity {
 		}
 	}
 
+	/**
+	 * Single tap on refresh: fetches only articles of the partial-sync window. Virtual feeds and categories (negative
+	 * IDs) always run the full update.
+	 */
+	@Override
+	protected void doPartialUpdate() {
+		int targetId = selectArticlesForCategory ? categoryId : feedId;
+		if (targetId < 0) {
+			doUpdate(true);
+			return;
+		}
+
+		if (headlineUpdater != null) {
+			if (headlineUpdater.getStatus().equals(AsyncTask.Status.FINISHED)) {
+				headlineUpdater = null;
+			} else {
+				return;
+			}
+		}
+
+		if (Data.getInstance().isConnected() && !isCacherRunning()) {
+			headlineUpdater = new FeedHeadlinePartialUpdater();
+			headlineUpdater.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		}
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(@NonNull Menu menu) {
 		if (articleId != Integer.MIN_VALUE) {
@@ -205,7 +231,7 @@ public class FeedHeadlineActivity extends MenuActivity {
 			return true;
 
 		if (item.getItemId() == R.id.Menu_Refresh) {
-			doUpdate(true);
+			doPartialUpdate();
 			return true;
 		}
 		return false;
@@ -284,6 +310,38 @@ public class FeedHeadlineActivity extends MenuActivity {
 		int prev = 0 <= (index - 1) ? list.get(index - 1) : Integer.MIN_VALUE;
 		int next = list.size() > (index + 1) ? list.get(index + 1) : Integer.MIN_VALUE;
 		return new int[]{prev, next};
+	}
+
+	/**
+	 * Partial update of the selected feed/category: fetches only articles of the partial-sync window and keeps all
+	 * already cached articles.
+	 */
+	private class FeedHeadlinePartialUpdater extends ActivityUpdater {
+		private static final int TASK_COUNT = 1;
+
+		private FeedHeadlinePartialUpdater() {
+			super(true);
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			taskCount = TASK_COUNT;
+			int progress = 0;
+			publishProgress(progress);
+
+			boolean displayUnread = Controller.getInstance().onlyUnread();
+			if (selectArticlesForCategory) {
+				Data.getInstance().updateArticlesPartial(categoryId, displayUnread, true, false);
+			} else {
+				Data.getInstance().updateArticlesPartial(feedId, displayUnread, false, false);
+			}
+			publishProgress(++progress);
+
+			Data.getInstance().calculateCounters();
+			Data.getInstance().notifyListeners();
+			publishProgress(Integer.MAX_VALUE);
+			return null;
+		}
 	}
 
 	/**

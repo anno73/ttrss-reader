@@ -93,6 +93,23 @@
             android:summary="@string/ConnectionApiPageSizePreferenceSummary"
             android:title="@string/ConnectionApiPageSizePreferenceTitle" />
 
+        <org.ttrssreader.preferences.EditIntegerPreference
+            android:order="68"
+            android:defaultValue="7"
+            android:inputType="number"
+            android:key="ConnectionPartialSyncAmountPreference"
+            android:summary="@string/ConnectionPartialSyncAmountPreferenceSummary"
+            android:title="@string/ConnectionPartialSyncAmountPreferenceTitle" />
+
+        <ListPreference
+            android:order="69"
+            android:defaultValue="days"
+            android:entries="@array/PartialSyncUnitEntries"
+            android:entryValues="@array/PartialSyncUnitValues"
+            android:key="ConnectionPartialSyncUnitPreference"
+            android:summary="@string/ConnectionPartialSyncUnitPreferenceSummary"
+            android:title="@string/ConnectionPartialSyncUnitPreferenceTitle" />
+
         <CheckBoxPreference
             android:order="70"
             android:defaultValue="false"

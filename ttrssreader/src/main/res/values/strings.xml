@@ -132,6 +132,13 @@
     <string name="ConnectionApiPageSizePreferenceTitle">Maximum items per API request</string>
     <string name="ConnectionApiPageSizePreferenceSummary">Maximum articles or real feeds requested per page (default: 200). Backend limits may lower this value. Labels and virtual feeds are excluded; total downloads are unchanged.</string>
     <string name="ConnectionPageSizeInvalid">Enter a whole number from 1 to 2147483647.</string>
+    <string name="ConnectionPartialSyncAmountPreferenceTitle">Partial sync window</string>
+    <string name="ConnectionPartialSyncAmountPreferenceSummary">Single tap on the refresh icon fetches only articles from this recent period (default: 7). Use the unit below. Long press runs a full sync.</string>
+    <string name="ConnectionPartialSyncUnitPreferenceTitle">Partial sync unit</string>
+    <string name="ConnectionPartialSyncUnitPreferenceSummary">Unit for the partial sync window.</string>
+    <string name="PartialSyncUnit_days">Days</string>
+    <string name="PartialSyncUnit_weeks">Weeks</string>
+    <string name="ConnectionPartialSyncInvalid">Enter a whole number from 1 to 2147483647.</string>
     <string name="ConnectionProxyPreferenceTitle">Use SOCKS Proxy</string>
     <string name="ConnectionProxyPreferenceSummary">Enable connection via SOCKS proxy</string>
     <string name="ConnectionProxyHostPreferenceTitle">Proxy Host</string>

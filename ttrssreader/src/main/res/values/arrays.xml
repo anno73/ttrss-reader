@@ -17,6 +17,14 @@
   -->
 <resources>
 
+    <string-array name="PartialSyncUnitEntries">
+        <item>@string/PartialSyncUnit_days</item>
+        <item>@string/PartialSyncUnit_weeks</item>
+    </string-array>
+    <string-array name="PartialSyncUnitValues">
+        <item>days</item>
+        <item>weeks</item>
+    </string-array>
     <string-array name="ShowButtonsModeEntries">
         <item>@string/ShowButtonsMode_none</item>
         <item>@string/ShowButtonsMode_allways</item>

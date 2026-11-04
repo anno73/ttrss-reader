@@ -58,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLPeerUnverifiedException;
 
 import okhttp3.Credentials;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -959,6 +960,7 @@ public class JSONConnector {
 
 		int pageSize = Controller.getInstance().apiPageSize();
 		int offset = 0;
+		Feed lastFeed = null;
 		while (true) {
 			Map<String, String> params = new HashMap<>();
 			params.put(PARAM_OP, VALUE_GET_FEEDS);
@@ -976,6 +978,7 @@ public class JSONConnector {
 				reader.beginArray();
 				while (reader.hasNext()) {
 					Feed feed = readFeed(reader);
+					lastFeed = feed;
 					boolean realFeed = feed.id > 0;
 					if (realFeed)
 						count++;
@@ -986,7 +989,7 @@ public class JSONConnector {
 				}
 				reader.endArray();
 			} catch (IOException | IllegalStateException | NumberFormatException e) {
-				reportPageFailure("getFeeds: could not read page (" + e.getClass().getSimpleName() + ")");
+				reportPageFailure(describeFeedPageFailure(e, offset, pageSize, lastFeed));
 				ret.clear();
 				return ret;
 			}
@@ -1002,6 +1005,33 @@ public class JSONConnector {
 
 		Log.d(TAG, "getFeeds: " + (System.currentTimeMillis() - time) + "ms");
 		return ret;
+	}
+
+	private static String describeFeedPageFailure(Exception e, int offset, int limit, Feed lastFeed) {
+		StringBuilder message = new StringBuilder("getFeeds: could not read page (")
+				.append(e.getClass().getSimpleName()).append(": ").append(e.getMessage()).append(")")
+				.append("\nRequest: op=getFeeds cat_id=").append(Data.VCAT_ALL)
+				.append(" offset=").append(offset).append(" limit=").append(limit)
+				.append("\nURL: ").append(redactUrl(Controller.getInstance().hostname()));
+		if (lastFeed != null)
+			message.append("\nLast feed parsed: id=").append(lastFeed.id)
+					.append(" title=").append(lastFeed.title)
+					.append(" url=").append(redactUrl(lastFeed.url));
+		return message.toString();
+	}
+
+	private static String redactUrl(String url) {
+		if (url == null)
+			return null;
+		HttpUrl parsed = HttpUrl.parse(url);
+		if (parsed == null)
+			return "<invalid URL>";
+		HttpUrl.Builder builder = parsed.newBuilder();
+		if (!parsed.username().isEmpty())
+			builder.username(RequestDiagnostics.REDACTED);
+		if (!parsed.password().isEmpty())
+			builder.password(RequestDiagnostics.REDACTED);
+		return builder.build().toString();
 	}
 
 	private Feed readFeed(JsonReader reader) throws IOException {

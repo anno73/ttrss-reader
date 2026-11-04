@@ -360,6 +360,21 @@ public class ApiPaginationTest {
 	}
 
 	@Test
+	public void feedPageFailureReportsPageAndRedactedLastFeed() {
+		when(controller.apiPageSize()).thenReturn(2);
+		page("{\"id\":7,\"title\":\"Seven\",\"feed_url\":\"https://user:secret@example.org/rss\"}",
+				"{\"title\":\"Missing id\"}");
+		assertTrue(connector.getFeeds().isEmpty());
+		assertTrue(connector.hasLastError());
+		String error = connector.pullLastError();
+		assertTrue(error, error.contains("Invalid feed record"));
+		assertTrue(error, error.contains("offset=0 limit=2"));
+		assertTrue(error, error.contains("URL: https://example.org/api/"));
+		assertTrue(error, error.contains("Last feed parsed: id=7 title=Seven url=https://VALUE_REDACTED:VALUE_REDACTED@example.org/rss"));
+		assertFalse(error, error.contains("secret"));
+	}
+
+	@Test
 	public void malformedHeadlinePageStopsAndSurfacesError() {
 		when(controller.apiPageSize()).thenReturn(1);
 		page(article(1));

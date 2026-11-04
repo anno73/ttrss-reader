@@ -47,9 +47,12 @@ Users want a fast partial sync of recent articles by default, and a full sync on
 
 ## Validation
 - Local Gradle build and tests are not run (repository rule: CI only).
-- CI: `.github/workflows/android-build.yml` on the task branch. Result: pending at time of writing (see below).
-- Manual tests (not yet run): partial window with 7 days and 2 weeks; old article stop; long-press vibration;
-  animation during both syncs; virtual feed full sync; offline and SSID-specific settings.
+- CI: `.github/workflows/android-build.yml` on the task branch, run `41890167644` (commit `2d540314`): success.
+  Artifact `ttrss-reader-debug` downloaded to `downloaded-apk/run-41890167644/` (ZIP plus
+  `ttrssreader/build/outputs/apk/{fdroid,play}/debug/*.apk`).
+- Manual tests (not yet run; merge waits for the user's approval): partial window with 7 days and 2 weeks; old
+  article stop; `order_by=feed_dates` on a live server; long-press vibration; animation during both syncs; virtual
+  feed full sync; offline and SSID-specific settings.
 
 ## Limitations
 - Overflow menu: no long press (accepted).
